@@ -68,7 +68,10 @@
     #mentionMenu { position: absolute; left: 12px; bottom: 62px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 180px; z-index: 3; }
     #mentionMenu button { display: block; width: 100%; margin: 0; text-align: left; background: transparent; color: var(--text); border-radius: 0; }
     #mentionMenu button:hover { background: var(--mine); }
-    #chatMain { position: relative; flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+    #plusMenu { position: absolute; right: 12px; bottom: 64px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 8px; z-index: 4; display: flex; flex-direction: column; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+    #plusMenu button { margin: 4px 0; width: 100%; text-align: left; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    #profileRank { color: var(--muted); font-size: 13px; }
     #chatPeople { font-size: 12px; color: var(--muted); padding: 6px 12px; border-bottom: 1px solid var(--line); }
     #emojiPanel { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; border-top: 1px solid var(--line); background: var(--dock); max-height: 140px; overflow: auto; }
     #emojiPanel button { margin: 0; padding: 4px 6px; background: transparent; font-size: 20px; }
@@ -178,6 +181,7 @@
       <h2>Admin</h2>
       <button id="ghostButton" type="button" onclick="toggleGhost()">Invisible mode: off</button>
       <p class="lede">Every room created on this site. Invisible mode lets you open them and join calls without appearing.</p>
+      <p id="ghostHint" class="lede hidden">Invisible mode is on. Every created room is listed with how many people have opened it.</p>
       <div id="allRooms"></div>
     </div>
   </div>
@@ -223,12 +227,15 @@
           <div class="gif-grid" id="gifGrid"></div>
         </div>
         <div id="emojiPanel" class="hidden"></div>
+        <div id="plusMenu" class="hidden">
+          <button type="button" onclick="pickExtra('emoji')">Emoji</button>
+          <button type="button" onclick="pickExtra('gif')">GIFs</button>
+          <button type="button" onclick="pickExtra('vote')">Vote</button>
+          <button type="button" onclick="pickExtra('shot')">Screenshot</button>
+        </div>
         <div class="chat-input">
           <input id="messageInput" maxlength="160" placeholder="Type a message..." autocomplete="off">
-          <button class="secondary" type="button" onclick="toggleEmojis()">Emoji</button>
-          <button class="secondary" type="button" onclick="toggleGifs()">GIF</button>
-          <button class="secondary" type="button" onclick="openVote()">Vote</button>
-          <button class="secondary" type="button" onclick="document.getElementById('shotInput').click()">Screenshot</button>
+          <button class="secondary" type="button" onclick="togglePlus()">+</button>
           <input id="shotInput" class="hidden" type="file" accept="image/*" onchange="sendScreenshot(this.files[0])">
           <button id="sendButton" type="button" onclick="sendMessage()">Send</button>
         </div>
@@ -243,14 +250,17 @@
     <div class="card-body">
       <div id="profileAvatar" class="avatar">A<span id="profileStatus" class="status-dot online"></span></div>
       <h2 id="profileName">Name</h2>
+      <div id="profileRank">Member</div>
       <div id="profileCustom" class="about"></div>
       <strong>About me</strong>
       <div id="profileAbout" class="about">No bio yet.</div>
       <div id="profileViewActions">
         <button type="button" class="secondary" onclick="closeProfile()">Close</button>
         <button id="editProfileButton" type="button" onclick="editProfile()">Edit profile</button>
+        <button id="banButton" class="danger hidden" type="button" onclick="banViewed()">Ban user</button>
       </div>
       <form id="profileForm" class="hidden" onsubmit="saveProfile(event)">
+        <input id="picInput" type="file" accept="image/*">
         <input id="profileNameInput" maxlength="20" placeholder="Display name">
         <select id="profileStatusInput">
           <option value="online">Online</option>
@@ -353,12 +363,21 @@
   let pendingUser = null;
   function namesKey() { return KEY_PREFIX + "names"; }
   function parseUser(id, email, raw) {
-    const [salt, passwordHash, name, verified, codeHash] = String(raw).split("~");
+    const [salt, passwordHash, name, verified, codeHash, rank] = String(raw).split("~");
     if (!salt || !passwordHash) return null;
-    return { id, email, salt, passwordHash, name: name || email.split("@")[0], verified: verified === "0" ? false : true, codeHash: codeHash || "" };
+    return { id, email, salt, passwordHash, name: name || email.split("@")[0], verified: verified === "0" ? false : true, codeHash: codeHash || "", rank: rank || "" };
   }
   function packUser(user) {
-    return [user.salt, user.passwordHash, user.name.replace(/~/g, ""), user.verified ? "1" : "0", user.codeHash || ""].join("~");
+    return [user.salt, user.passwordHash, user.name.replace(/~/g, ""), user.verified ? "1" : "0", user.codeHash || "", user.rank || ""].join("~");
+  }
+  function bansKey() { return KEY_PREFIX + "bans"; }
+  function picKey(id) { return KEY_PREFIX + "pic" + id; }
+  function ordinal(n) {
+    const v = Number(n);
+    if (!v) return "Member";
+    const s = ["th", "st", "nd", "rd"];
+    const j = v % 100;
+    return v + (s[(j - 20) % 10] || s[j] || s[0]) + " user";
   }
   function parseRooms(raw) {
     if (!raw || raw === "-") return [];
@@ -500,6 +519,10 @@
         errorEl.textContent = "Wrong email or password.";
         return;
       }
+      if ((await getValue(bansKey())).split(",").includes(existing.id)) {
+        errorEl.textContent = "This account is banned.";
+        return;
+      }
       if (!existing.verified) {
         pendingUser = existing;
         showVerify();
@@ -553,10 +576,11 @@
     }
     pendingUser.verified = true;
     pendingUser.codeHash = "";
+    const count = Number(await getValue(usersKey())) || 0;
+    pendingUser.rank = String(count + 1);
     await setValue(userKey(pendingUser.id), packUser(pendingUser));
     await setValue(profileKey(pendingUser.id), packProfile({ name: pendingUser.name, status: "online", color: "5865f2", custom: "", about: "" }));
-    const count = Number(await getValue(usersKey())) || 0;
-    await setValue(usersKey(), String(count + 1));
+    await setValue(usersKey(), String(pendingUser.rank));
     setAccount(pendingUser);
     pendingUser = null;
     document.getElementById("verifyForm").classList.add("hidden");
@@ -586,17 +610,21 @@
     box.classList.remove("hidden");
     ghostMode = (await getValue(ghostStoreKey(currentUser.id))) === "1";
     document.getElementById("ghostButton").textContent = "Invisible mode: " + (ghostMode ? "on" : "off");
-    const raw = await getValue(allKey());
+    document.getElementById("ghostHint").classList.toggle("hidden", !ghostMode);
     const list = document.getElementById("allRooms");
     list.innerHTML = "";
+    if (!ghostMode) return;
+    const raw = await getValue(allKey());
     const rooms = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
     if (!rooms.length) { list.textContent = "No rooms yet."; return; }
     for (const entry of rooms) {
       const [code, name] = entry.split(":");
+      const members = await getValue(membersKey(code));
+      const count = members && members !== "-" ? members.split(",").filter(Boolean).length : 0;
       const button = document.createElement("button");
       button.type = "button";
       button.className = "secondary";
-      button.textContent = decodeURIComponent(name || code) + " · " + code;
+      button.textContent = decodeURIComponent(name || code) + " · " + code + " · " + count + " people";
       button.onclick = () => openSavedRoom(code);
       list.appendChild(button);
     }
@@ -606,6 +634,7 @@
     ghostMode = !ghostMode;
     await setValue(ghostStoreKey(currentUser.id), ghostMode ? "1" : "0");
     document.getElementById("ghostButton").textContent = "Invisible mode: " + (ghostMode ? "on" : "off");
+    await renderAdmin();
   }
   function logout() {
     localStorage.removeItem(SESSION_KEY);
@@ -709,6 +738,16 @@
     let next = ids.join(",");
     while (next.length > 240 && ids.length > 1) { ids.shift(); next = ids.join(","); }
     await setValue(indexKey(currentRoom), next);
+  }
+  async function forgetMember(code) {
+    const raw = await getValue(membersKey(code));
+    const names = raw && raw !== "-" ? raw.split(",").filter((item) => item && item !== currentUser.name) : [];
+    await setValue(membersKey(code), names.join(",") || "-");
+    if (names.length) return;
+    await setValue(roomKey(code), "-");
+    const all = await getValue(allKey());
+    const rooms = all && all !== "-" ? all.split(",").filter((entry) => entry && !entry.startsWith(code + ":")) : [];
+    await setValue(allKey(), rooms.join(",") || "-");
   }
   async function rememberMember(name) {
     const clean = String(name || "").replace(/[,@]/g, "").trim();
@@ -1019,8 +1058,10 @@
     setMembers("No one in voice yet.");
   }
 
-  function leaveRoom() {
+  async function leaveRoom() {
+    const room = currentRoom;
     leaveVoice();
+    if (room && !ghostMode) await forgetMember(room);
     stopPolling(); currentRoom = null;
     chat.classList.add("hidden"); roomTitle.classList.add("hidden");
     document.getElementById("gifPanel").classList.add("hidden");
@@ -1123,7 +1164,20 @@
     const dot = document.getElementById("profileStatus");
     dot.className = "status-dot " + profile.status;
     document.getElementById("profileName").textContent = profile.name;
+    const userRaw = await getValue(userKey(viewingId));
+    const viewed = parseUser(viewingId, "", userRaw);
+    document.getElementById("profileRank").textContent = ordinal(viewed && viewed.rank);
+    const pic = await getValue(picKey(viewingId));
+    avatar.querySelectorAll("img").forEach((img) => img.remove());
+    if (pic && pic.startsWith("https://")) {
+      const img = document.createElement("img");
+      img.src = pic;
+      img.alt = "";
+      avatar.insertBefore(img, avatar.firstChild);
+      avatar.firstChild.nextSibling.textContent = "";
+    }
     document.getElementById("profileCustom").textContent = profile.custom;
+    document.getElementById("banButton").classList.toggle("hidden", !isAdmin() || own);
     document.getElementById("profileAbout").textContent = profile.about || "No bio yet.";
     document.getElementById("editProfileButton").classList.toggle("hidden", !own);
     document.getElementById("profileViewActions").classList.remove("hidden");
@@ -1154,8 +1208,26 @@
     currentUser.name = profile.name;
     await setValue(userKey(currentUser.id), packUser(currentUser));
     await setValue(profileKey(currentUser.id), packProfile(profile));
+    const file = document.getElementById("picInput").files[0];
+    if (file) {
+      const body = new FormData();
+      body.append("reqtype", "fileupload");
+      body.append("fileToUpload", file, file.name || "avatar.png");
+      const res = await fetch("https://catbox.moe/user/api.php", { method: "POST", body });
+      const url = (await res.text()).trim();
+      if (url.startsWith("https://")) await setValue(picKey(currentUser.id), url);
+    }
     setAccount(currentUser);
     openProfile(currentUser.id);
+  }
+  async function banViewed() {
+    if (!isAdmin() || !viewingId || viewingId === currentUser.id) return;
+    if (!confirm("Ban this user?")) return;
+    const raw = await getValue(bansKey());
+    const ids = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
+    if (!ids.includes(viewingId)) ids.push(viewingId);
+    await setValue(bansKey(), ids.slice(-20).join(","));
+    closeProfile();
   }
   async function showChatPeople() {
     if (!currentRoom) return;
@@ -1163,6 +1235,16 @@
     document.getElementById("chatPeople").textContent = names.length ? "In chat: " + names.join(", ") : "In chat: just you";
   }
   const EMOJIS = ["😀","😁","😂","🤣","😊","😍","😘","😎","🤔","😴","😢","😡","👍","👎","👏","🙏","🔥","❤️","🎉","✨","✅","❌","👀","💯"];
+  function togglePlus() {
+    document.getElementById("plusMenu").classList.toggle("hidden");
+  }
+  function pickExtra(kind) {
+    document.getElementById("plusMenu").classList.add("hidden");
+    if (kind === "emoji") { document.getElementById("gifPanel").classList.add("hidden"); toggleEmojis(); return; }
+    if (kind === "gif") { document.getElementById("emojiPanel").classList.add("hidden"); toggleGifs(); return; }
+    if (kind === "vote") openVote();
+    if (kind === "shot") document.getElementById("shotInput").click();
+  }
   function toggleEmojis() {
     const panel = document.getElementById("emojiPanel");
     panel.classList.toggle("hidden");
