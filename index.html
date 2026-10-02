@@ -809,7 +809,7 @@
     try {
       const user = parseUser(session.id, session.email, await getValue(userKey(session.id)));
       if (!user) {
-        showAuthMode("login");
+        showAuthMode("login");  
         return;
       }
       setAccount(user);
