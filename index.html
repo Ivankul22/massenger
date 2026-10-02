@@ -76,9 +76,7 @@
     #plusMenu button { margin: 4px 0; width: 100%; text-align: left; }
     .avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
     #profileRank { color: var(--muted); font-size: 13px; }
-    #chatPeople { font-size: 12px; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-    #chatPeople .person { display: inline-flex; align-items: center; gap: 4px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
-    #chatPeople button { margin: 0; padding: 2px 6px; background: #c44b63; font-size: 11px; }
+    #chatPeople { font-size: 12px; color: var(--muted); padding: 6px 12px; border-bottom: 1px solid var(--line); }
     #emojiPanel { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; border-top: 1px solid var(--line); background: var(--dock); max-height: 140px; overflow: auto; }
     #emojiPanel button { margin: 0; padding: 4px 6px; background: transparent; font-size: 20px; }
     #stage { position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 6; display: flex; align-items: center; justify-content: center; }
@@ -166,13 +164,11 @@
     </form>
     <div id="authError" class="error"></div>
     <form id="verifyForm" class="hidden" onsubmit="submitVerify(event)">
-      <p class="lede">Check your inbox and spam. The first email may be a confirmation from the mail service. Open that, then press Resend code.</p>
-      <p id="backupCode" class="lede hidden"></p>
+      <p class="lede">Enter the 6-digit code sent to your email.</p>
       <input id="verifyCode" inputmode="numeric" maxlength="6" placeholder="Verification code" required>
       <br>
       <button type="submit">Verify email</button>
       <button class="secondary" type="button" onclick="resendCode()">Resend code</button>
-      <button class="secondary" type="button" onclick="showBackupCode()">I did not get the email</button>
     </form>
   </div>
 
@@ -188,20 +184,13 @@
     <div id="adminBox" class="hidden">
       <h2>Admin</h2>
       <button id="ghostButton" type="button" onclick="toggleGhost()">Invisible mode: off</button>
-    <button class="secondary" type="button" onclick="openAdminMenu()">Admin menu</button>
-      <div id="allUsers" class="hidden"></div>
       <p class="lede">Every room created on this site. Invisible mode lets you open them and join calls without appearing.</p>
       <p id="ghostHint" class="lede hidden">Invisible mode is on. Every created room is listed with how many people have opened it.</p>
       <div id="allRooms"></div>
     </div>
   </div>
 
-  <div id="adminMenu" class="screen hidden">
-    <h2>Admin menu</h2>
-    <p class="lede">Every account, with email, signup number, and status.</p>
-    <div id="adminUserList"></div>
-    <button class="secondary" type="button" onclick="goHome()">Back</button>
-  </div>
+  <div id="joinScreen" class="screen hidden">
     <h2>Join a Room</h2>
     <input id="joinCode" maxlength="6" placeholder="Enter 6-character room code" autocomplete="off">
     <br>
@@ -299,7 +288,7 @@
 <script>
   const API = "https://api.keyval.org";
   const GIF_API = "https://api.otakugifs.xyz/gif?reaction=";
-  const ADMIN_EMAIL = "8081@perrys.org.uk";
+  const ADMIN_EMAIL = "you@email.com";
   const KEY_PREFIX = "mshggp2026";
   const POLL_MS = 2000;
   const SESSION_KEY = "messenger.session";
@@ -362,43 +351,19 @@
   function indexKey(code) { return KEY_PREFIX + "i" + code; }
   function messageKey(code, id) { return KEY_PREFIX + "m" + code + id; }
 
-  async function getOne(key) {
+  async function getValue(key) {
     const res = await fetch(`${API}/get/${encodeURIComponent(key)}`);
     if (!res.ok) throw new Error("Could not reach the shared store.");
     const data = await res.json();
     if (!data || data.status === "-KEY-DOESNT-EXISTS-") return "";
     return data.val == null ? "" : String(data.val);
   }
-  async function getValue(key) {
-    const first = await getOne(key);
-    if (!first) return "";
-    let out = first;
-    for (let i = 1; i < 4; i++) {
-      const extra = await getOne(key + "p" + i);
-      if (!extra) break;
-      out += extra;
-    }
-    return out;
-  }
   async function setValue(key, value) {
-    const text = String(value);
-    const parts = [];
-    for (let i = 0; i < text.length; i += 70) parts.push(text.slice(i, i + 70));
-    if (!parts.length) parts.push("-");
-    if (parts.length > 4) throw new Error("That is too large to save.");
-    for (let i = 0; i < 4; i++) {
-      const part = parts[i];
-      if (part == null) {
-        if (i === 0) continue;
-        await fetch(`${API}/set/${encodeURIComponent(key + "p" + i)}/-`);
-        continue;
-      }
-      const safe = encodeURIComponent(part);
-      const res = await fetch(`${API}/set/${encodeURIComponent(i === 0 ? key : key + "p" + i)}/${safe}`);
-      if (!res.ok) throw new Error("Could not save.");
-      const data = await res.json().catch(() => ({}));
-      if (data.status && data.status !== "SUCCESS") throw new Error("Could not save.");
-    }
+    const safe = encodeURIComponent(String(value)).slice(0, 260);
+    const res = await fetch(`${API}/set/${encodeURIComponent(key)}/${safe}`);
+    if (!res.ok) throw new Error("Could not save.");
+    const data = await res.json().catch(() => ({}));
+    if (data.status && data.status !== "SUCCESS") throw new Error("Could not save.");
   }
   let pendingUser = null;
   function namesKey() { return KEY_PREFIX + "names"; }
@@ -514,7 +479,6 @@
   async function showHome() {
     stopPolling();
     auth.classList.add("hidden"); joinScreen.classList.add("hidden"); chat.classList.add("hidden");
-    document.getElementById("adminMenu").classList.add("hidden");
     roomTitle.classList.add("hidden"); home.classList.remove("hidden"); roomDock.classList.remove("hidden");
     accountBar.classList.remove("hidden");
     try {
@@ -537,8 +501,7 @@
       return;
     }
     try {
-      const mapped = await getValue(KEY_PREFIX + "em" + await userIdFromEmail(email));
-      const id = mapped && mapped !== "-" ? mapped : await userIdFromEmail(email);
+      const id = await userIdFromEmail(email);
       const existing = parseUser(id, email, await getValue(userKey(id)));
       if (mode === "signup") {
         if (existing) { errorEl.textContent = "An account with that email already exists."; return; }
@@ -550,11 +513,9 @@
         user.passwordHash = await sha256(user.salt + ":" + password);
         await setValue(userKey(id), packUser(user));
         await reserveName(display);
-        await setValue(KEY_PREFIX + "em" + id, id);
-        try { await sendVerifyEmail(email, code); } catch { pendingCode = code; }
+        await sendVerifyEmail(email, code);
         pendingUser = user;
         showVerify();
-        showBackupCode();
         document.getElementById("authNotice")?.remove();
         errorEl.textContent = "";
         return;
@@ -597,26 +558,17 @@
     names.push(name.toLowerCase());
     await setValue(namesKey(), names.slice(-18).join(","));
   }
-  let pendingCode = "";
   async function sendVerifyEmail(email, code) {
-    pendingCode = code;
     const res = await fetch("https://formsubmit.co/ajax/" + encodeURIComponent(email), {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
       body: JSON.stringify({
-        _subject: "Your Messenger code is " + code,
+        _subject: "Messenger verification code",
         _captcha: "false",
-        _template: "box",
-        code: code,
-        message: "Your verification code is " + code
+        message: "Your Messenger verification code is " + code + ". It expires when you verify."
       })
     });
-    if (!res.ok) throw new Error("Could not send the verification email. Use the backup code.");
-  }
-  function showBackupCode() {
-    const box = document.getElementById("backupCode");
-    box.textContent = pendingCode ? "Your code is " + pendingCode : "Press Resend code, then try again.";
-    box.classList.remove("hidden");
+    if (!res.ok) throw new Error("Could not send the verification email.");
   }
   async function submitVerify(event) {
     event.preventDefault();
@@ -632,9 +584,7 @@
     pendingUser.codeHash = "";
     const count = Number(await getValue(KEY_PREFIX + "users")) || 0;
     pendingUser.rank = String(count + 1);
-    pendingUser.id = pendingUser.rank;
     await setValue(userKey(pendingUser.id), packUser(pendingUser));
-    await setValue(KEY_PREFIX + "em" + await userIdFromEmail(pendingUser.email), pendingUser.id);
     await setValue(profileKey(pendingUser.id), packProfile({ name: pendingUser.name, status: "online", color: "5865f2", custom: "", about: "" }));
     await setValue(KEY_PREFIX + "users", String(pendingUser.rank));
     await rememberUser(pendingUser);
@@ -1380,31 +1330,8 @@
   }
   async function showChatPeople() {
     if (!currentRoom) return;
-    const box = document.getElementById("chatPeople");
-    const names = (await roomMembers()).filter((name) => name && name !== "-");
-    box.innerHTML = "";
-    const label = document.createElement("span");
-    label.textContent = names.length ? "In chat" : "In chat: just you";
-    box.appendChild(label);
-    for (const name of names) {
-      const row = document.createElement("span");
-      row.className = "person";
-      row.textContent = name;
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.textContent = "Delete";
-      remove.onclick = () => removePerson(name);
-      row.appendChild(remove);
-      box.appendChild(row);
-    }
-  }
-  async function removePerson(name) {
-    if (!currentRoom) return;
-    if (name !== currentUser.name && !isAdmin()) return;
-    const names = (await roomMembers()).filter((item) => item && item !== name);
-    await setValue(membersKey(currentRoom), names.join(",") || "-");
-    if (!names.length) await forgetMember(currentRoom);
-    await showChatPeople();
+    const names = await roomMembers();
+    document.getElementById("chatPeople").textContent = names.length ? "In chat: " + names.join(", ") : "In chat: just you";
   }
   const EMOJIS = ["😀","😁","😂","🤣","😊","😍","😘","😎","🤔","😴","😢","😡","👍","👎","👏","🙏","🔥","❤️","🎉","✨","✅","❌","👀","💯"];
   function togglePlus() {
