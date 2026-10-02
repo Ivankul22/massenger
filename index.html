@@ -82,7 +82,10 @@
     .name button { margin: 0; padding: 0; background: transparent; color: var(--accent); font-size: 12px; font-weight: bold; }
     .time { color: var(--muted); font-weight: normal; }
     .delete-msg { margin-left: auto; padding: 0 4px; background: transparent; color: var(--muted); font-size: 12px; }
-    .gif-message { display: block; max-width: 220px; border-radius: 8px; margin-top: 4px; }
+    .shot { max-width: 240px; border-radius: 8px; display: block; margin-top: 4px; cursor: zoom-in; }
+    .vote { border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-top: 4px; }
+    .vote button { display: block; width: 100%; margin: 4px 0; text-align: left; background: var(--mine); color: var(--text); }
+    .admin-badge { font-size: 11px; background: #faa81a; color: #222; border-radius: 6px; padding: 2px 6px; margin-left: 6px; }
     .system-message { text-align: center; color: var(--muted); font-size: 13px; margin: 10px 0; }
     .chat-input { display: flex; padding: 12px; border-top: 1px solid var(--line); gap: 8px; background: var(--panel); }
     .chat-input input { flex: 1; max-width: none; margin: 0; }
@@ -163,6 +166,7 @@
     <button type="button" onclick="createRoom()">Create Room</button>
     <button type="button" onclick="showJoin()">Join with Code</button>
     <div id="homeError" class="error"></div>
+    <p id="userCount" class="lede">Registered users: …</p>
   </div>
 
   <div id="joinScreen" class="screen hidden">
@@ -210,6 +214,9 @@
           <input id="messageInput" maxlength="160" placeholder="Type a message..." autocomplete="off">
           <button class="secondary" type="button" onclick="toggleEmojis()">Emoji</button>
           <button class="secondary" type="button" onclick="toggleGifs()">GIF</button>
+          <button class="secondary" type="button" onclick="openVote()">Vote</button>
+          <button class="secondary" type="button" onclick="document.getElementById('shotInput').click()">Screenshot</button>
+          <input id="shotInput" class="hidden" type="file" accept="image/*" onchange="sendScreenshot(this.files[0])">
           <button id="sendButton" type="button" onclick="sendMessage()">Send</button>
         </div>
       </div>
@@ -254,6 +261,7 @@
 <script>
   const API = "https://api.keyval.org";
   const GIF_API = "https://api.otakugifs.xyz/gif?reaction=";
+  const ADMIN_EMAIL = "8081@perrys.org.uk";
   const KEY_PREFIX = "mshggp2026";
   const POLL_MS = 2000;
   const SESSION_KEY = "messenger.session";
@@ -305,6 +313,9 @@
   function profileKey(id) { return KEY_PREFIX + "p" + id; }
   function voiceKey(code) { return KEY_PREFIX + "v" + code; }
   function roomKey(code) { return KEY_PREFIX + "r" + code; }
+  function usersKey() { return KEY_PREFIX + "users"; }
+  function voteKey(id) { return KEY_PREFIX + "b" + id; }
+  function isAdmin() { return !!(currentUser && currentUser.email === ADMIN_EMAIL); }
   function membersKey(code) { return KEY_PREFIX + "e" + code; }
   function indexKey(code) { return KEY_PREFIX + "i" + code; }
   function messageKey(code, id) { return KEY_PREFIX + "m" + code + id; }
@@ -397,7 +408,7 @@
   }
   function setAccount(user) {
     currentUser = user;
-    accountName.textContent = user.name;
+    accountName.textContent = user.name + (isAdmin() ? " · admin" : "");
     accountBar.classList.remove("hidden");
     localStorage.setItem(SESSION_KEY, JSON.stringify({ id: user.id, email: user.email }));
   }
@@ -426,7 +437,11 @@
     auth.classList.add("hidden"); joinScreen.classList.add("hidden"); chat.classList.add("hidden");
     roomTitle.classList.add("hidden"); home.classList.remove("hidden"); roomDock.classList.remove("hidden");
     accountBar.classList.remove("hidden");
-    try { renderRoomDock(await loadRooms()); } catch (err) { document.getElementById("homeError").textContent = err.message; }
+    try {
+      renderRoomDock(await loadRooms());
+      const count = Number(await getValue(usersKey())) || 0;
+      document.getElementById("userCount").textContent = "Registered users: " + count;
+    } catch (err) { document.getElementById("homeError").textContent = err.message; }
   }
   async function submitAuth(event) {
     event.preventDefault();
@@ -449,6 +464,8 @@
         user.passwordHash = await sha256(user.salt + ":" + password);
         await setValue(userKey(id), packUser(user));
         await setValue(profileKey(id), packProfile({ name: user.name, status: "online", color: "5865f2", custom: "", about: "" }));
+        const count = Number(await getValue(usersKey())) || 0;
+        await setValue(usersKey(), String(count + 1));
         setAccount(user);
         await showHome();
         return;
@@ -524,7 +541,7 @@
   function setStatus(text, color) { const el = document.getElementById("connectionStatus"); el.textContent = text; el.style.color = color; }
   function decodeMessage(id, raw) {
     const parts = String(raw).split("~");
-    if (parts[3] === "gif") return { id, uid: parts[0], name: parts[1] || "User", createdAt: parts[2] || "", kind: "gif", text: parts[4] || "" };
+    if (parts[3] === "gif" || parts[3] === "vote" || parts[3] === "shot") return { id, uid: parts[0], name: parts[1] || "User", createdAt: parts[2] || "", kind: parts[3], text: parts.slice(4).join("~") };
     return { id, uid: parts[0], name: parts[1] || "User", createdAt: parts[2] || "", kind: "text", text: parts.slice(3).join("~") };
   }
   async function poll() {
@@ -555,9 +572,8 @@
     return false;
   }
   async function publish(message) {
-    const body = message.kind === "gif"
-      ? `${currentUser.id}~${message.name}~${message.createdAt}~gif~${message.text}`
-      : `${currentUser.id}~${message.name}~${message.createdAt}~${message.text}`;
+    const kind = message.kind === "text" ? "" : message.kind + "~";
+    const body = `${currentUser.id}~${message.name}~${message.createdAt}~${kind}${message.text}`;
     await setValue(messageKey(currentRoom, message.id), body);
     const index = await getValue(indexKey(currentRoom));
     const ids = index && index !== "-" ? index.split(",").filter(Boolean) : [];
@@ -638,6 +654,48 @@
     renderMessage(message);
     try { await publish(message); setStatus("Live", "#3dcc7a"); } catch (err) { setStatus(err.message, "#d33"); }
     input.focus();
+  }
+  function openVote() {
+    const question = prompt("Vote question?");
+    if (!question) return;
+    const options = prompt("Options, separated by commas");
+    if (!options) return;
+    const choices = options.split(",").map((item) => item.trim()).filter(Boolean).slice(0, 4);
+    if (choices.length < 2) { setStatus("Add at least 2 options.", "#d33"); return; }
+    sendSpecial("vote", [question.replace(/[|~]/g, "-"), ...choices.map((item) => item.replace(/[|~]/g, "-"))].join("|"));
+  }
+  async function sendScreenshot(file) {
+    document.getElementById("shotInput").value = "";
+    if (!file || !currentRoom) return;
+    setStatus("Sending screenshot...", "#faa81a");
+    try {
+      const body = new FormData();
+      body.append("reqtype", "fileupload");
+      body.append("fileToUpload", file, file.name || "screenshot.png");
+      const res = await fetch("https://catbox.moe/user/api.php", { method: "POST", body });
+      const url = (await res.text()).trim();
+      if (!url.startsWith("https://")) throw new Error("Screenshot upload failed.");
+      await sendSpecial("shot", url);
+    } catch (err) {
+      setStatus(err.message || "Screenshot upload failed.", "#d33");
+    }
+  }
+  async function sendSpecial(kind, text) {
+    if (rateLimited()) { setStatus("Slow down. Max 20 messages a second.", "#d33"); return; }
+    const message = { id: Date.now().toString(36), uid: currentUser.id, name: currentUser.name.replace(/~/g, ""), createdAt: new Date().toISOString(), kind, text };
+    renderMessage(message);
+    try { await publish(message); setStatus("Live", "#3dcc7a"); } catch (err) { setStatus(err.message, "#d33"); }
+  }
+  async function castVote(id, choice) {
+    const raw = await getValue(voteKey(id));
+    const votes = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
+    if (votes.some((item) => item.startsWith(currentUser.id + ":"))) { setStatus("You already voted.", "#faa81a"); return; }
+    votes.push(currentUser.id + ":" + choice);
+    await setValue(voteKey(id), votes.slice(-12).join(","));
+    const node = messagesEl.querySelector(`[data-id="${id}"]`);
+    if (node) node.remove();
+    const rawMessage = await getValue(messageKey(currentRoom, id));
+    if (rawMessage) renderMessage(decodeMessage(id, rawMessage));
   }
   async function sendGif(url) {
     if (!currentRoom) return;
@@ -864,6 +922,32 @@
       img.src = message.text;
       img.alt = "GIF";
       div.appendChild(img);
+    } else if (message.kind === "shot" && /^https:\/\//.test(message.text)) {
+      const img = document.createElement("img");
+      img.className = "shot";
+      img.src = message.text;
+      img.alt = "Screenshot";
+      img.onclick = () => window.open(message.text, "_blank");
+      div.appendChild(img);
+    } else if (message.kind === "vote") {
+      const box = document.createElement("div");
+      box.className = "vote";
+      const [question, ...choices] = message.text.split("|");
+      const title = document.createElement("strong");
+      title.textContent = question;
+      box.appendChild(title);
+      getValue(voteKey(message.id)).then((raw) => {
+        const votes = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
+        choices.forEach((choice, index) => {
+          const count = votes.filter((item) => item.endsWith(":" + index)).length;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = choice + " · " + count;
+          button.onclick = () => castVote(message.id, index);
+          box.appendChild(button);
+        });
+      });
+      div.appendChild(box);
     } else {
       div.appendChild(messageTextNode(message.text));
       if (message.text.toLowerCase().includes("@" + currentUser.name.toLowerCase())) div.classList.add("tagged");
@@ -1021,7 +1105,10 @@
     if (event.key === "Enter") { hideMentions(); sendMessage(); }
     if (event.key === "Escape") hideMentions();
   });
-  document.getElementById("messageInput").addEventListener("input", () => showMentions());
+  document.getElementById("messageInput").addEventListener("paste", (event) => {
+    const file = [...(event.clipboardData?.files || [])].find((item) => item.type.startsWith("image/"));
+    if (file) { event.preventDefault(); sendScreenshot(file); }
+  });
   document.getElementById("joinCode").addEventListener("keydown", (event) => { if (event.key === "Enter") joinRoom(); });
   showAuthMode("login");
   boot();
