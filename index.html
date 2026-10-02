@@ -46,7 +46,7 @@
       white-space: nowrap;
     }
     #roomTitle { margin-top: 5px; font-size: 14px; opacity: 0.9; }
-    .screen { padding: 35px 20px; text-align: center; }
+    .screen { padding: 35px 20px 16px; text-align: center; overflow: auto; }
     .screen h1, .screen h2 { margin-top: 0; }
     .lede { color: #555; margin-top: 0; }
     input {
@@ -73,16 +73,8 @@
     button:hover { background: #4752c4; }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .secondary { background: #777; }
-    .ghost {
-      background: transparent;
-      color: #5865f2;
-      text-decoration: underline;
-      padding: 6px 8px;
-    }
-    .ghost:hover { background: transparent; color: #4752c4; }
     .hidden { display: none !important; }
     .error { color: #d33; margin: 12px; min-height: 20px; }
-    .notice { color: #1b7a3a; margin: 12px auto; max-width: 420px; min-height: 20px; }
     .tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 8px; }
     .tabs button { background: #e8eaff; color: #5865f2; }
     .tabs button.active { background: #5865f2; color: #fff; }
@@ -116,16 +108,45 @@
       align-items: center;
       padding: 6px 12px;
       border-bottom: 1px solid #ddd;
+      font-size: 13px;
+      color: #666;
     }
     button.small { padding: 6px 12px; margin: 0; font-size: 13px; }
     header button.small { background: rgba(255, 255, 255, 0.2); }
     header button.small:hover { background: rgba(255, 255, 255, 0.32); }
-    .fine {
-      max-width: 460px;
-      margin: 18px auto 0;
-      color: #777;
-      font-size: 13px;
+    #roomDock {
+      margin-top: auto;
+      border-top: 1px solid #ddd;
+      background: #f7f7fb;
+      padding: 10px 14px 14px;
+      max-height: 220px;
+      overflow: auto;
     }
+    #roomDock h3 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      text-align: left;
+      color: #555;
+    }
+    .room-row {
+      width: 100%;
+      margin: 0 0 6px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      color: #222;
+      text-align: left;
+      border: 1px solid #e4e6ef;
+    }
+    .room-row:hover { background: #e8eaff; }
+    .room-code {
+      font-family: monospace;
+      letter-spacing: 1px;
+      color: #5865f2;
+    }
+    .empty-rooms { color: #888; font-size: 13px; text-align: left; margin: 0; }
     @media (max-width: 600px) {
       .message { max-width: 88%; }
       #accountBar { position: static; justify-content: center; margin-top: 10px; }
@@ -162,13 +183,11 @@
       <button id="authSubmit" type="submit">Log in</button>
     </form>
     <div id="authError" class="error"></div>
-    <div id="authNotice" class="notice"></div>
-    <p class="fine">Accounts and rooms are saved in this browser. GitHub Pages cannot run the old Netlify login server, so someone on another computer will not see these rooms.</p>
   </div>
 
   <div id="home" class="screen hidden">
     <h1>Welcome</h1>
-    <p class="lede">Create a room or join one with its code. This copy stays on this browser.</p>
+    <p class="lede">Create a room or join one with its code. Rooms you add stay at the bottom.</p>
     <input id="displayNameEdit" maxlength="30" placeholder="Display name">
     <br>
     <button class="secondary" type="button" onclick="saveDisplayName()">Save name</button>
@@ -189,32 +208,44 @@
     <div id="joinError" class="error"></div>
   </div>
 
+  <div id="roomDock" class="hidden">
+    <h3>Your rooms</h3>
+    <div id="roomList"></div>
+  </div>
+
   <div id="chat" class="hidden">
     <div class="chat-bar">
-      <span id="connectionStatus"></span>
+      <span id="connectionStatus">Connecting...</span>
       <button class="secondary small" type="button" onclick="leaveRoom()">Leave Room</button>
     </div>
     <div id="messages"></div>
     <div class="chat-input">
-      <input id="messageInput" maxlength="2000" placeholder="Type a message..." autocomplete="off">
-      <button type="button" onclick="sendMessage()">Send</button>
+      <input id="messageInput" maxlength="300" placeholder="Type a message..." autocomplete="off">
+      <button id="sendButton" type="button" onclick="sendMessage()">Send</button>
     </div>
   </div>
 </div>
 
 <script>
+  const APP_KEY = "vckxgkui";
+  const API = "https://keyvalue.immanuel.co/api/KeyVal";
+  const POLL_MS = 2000;
   const DB_KEY = "messenger.db";
   const SESSION_KEY = "messenger.session";
+  const ROOMS_KEY = "messenger.myrooms";
   const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
   let currentUser = null;
   let currentRoom = null;
+  let pollTimer = null;
   let seen = new Set();
+  let knownIndex = "";
 
   const auth = document.getElementById("auth");
   const home = document.getElementById("home");
   const joinScreen = document.getElementById("joinScreen");
   const chat = document.getElementById("chat");
+  const roomDock = document.getElementById("roomDock");
   const messagesEl = document.getElementById("messages");
   const roomTitle = document.getElementById("roomTitle");
   const accountBar = document.getElementById("accountBar");
@@ -223,17 +254,70 @@
   function loadDb() {
     try {
       const data = JSON.parse(localStorage.getItem(DB_KEY) || "null");
-      if (data?.users && data?.rooms && data?.messages) return data;
+      if (data?.users) return data;
     } catch {}
-    return { users: [], rooms: [], messages: [], nextId: 1 };
+    return { users: [] };
   }
 
   function saveDb(db) {
     localStorage.setItem(DB_KEY, JSON.stringify(db));
   }
 
+  function myRooms() {
+    try {
+      const rooms = JSON.parse(localStorage.getItem(ROOMS_KEY) || "[]");
+      return Array.isArray(rooms) ? rooms : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveMyRooms(rooms) {
+    localStorage.setItem(ROOMS_KEY, JSON.stringify(rooms));
+    renderRoomDock();
+  }
+
+  function rememberRoom(room) {
+    const rooms = myRooms().filter((item) => item.code !== room.code);
+    rooms.push({ code: room.code, name: room.name });
+    saveMyRooms(rooms);
+  }
+
+  function renderRoomDock() {
+    const list = document.getElementById("roomList");
+    const rooms = myRooms();
+    list.innerHTML = "";
+    if (!rooms.length) {
+      const empty = document.createElement("p");
+      empty.className = "empty-rooms";
+      empty.textContent = "Rooms you create or join will stay here.";
+      list.appendChild(empty);
+      return;
+    }
+    for (const room of rooms) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "room-row";
+      const name = document.createElement("span");
+      name.textContent = room.name;
+      const code = document.createElement("span");
+      code.className = "room-code";
+      code.textContent = room.code;
+      button.appendChild(name);
+      button.appendChild(code);
+      button.onclick = () => openSavedRoom(room.code);
+      list.appendChild(button);
+    }
+    list.scrollTop = list.scrollHeight;
+  }
+
   function bytesToHex(bytes) {
     return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  async function hashPassword(password, salt) {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + ":" + password));
+    return bytesToHex(new Uint8Array(digest));
   }
 
   function randomSalt() {
@@ -242,21 +326,10 @@
     return bytesToHex(bytes);
   }
 
-  async function hashPassword(password, salt) {
-    const data = new TextEncoder().encode(salt + ":" + password);
-    const digest = await crypto.subtle.digest("SHA-256", data);
-    return bytesToHex(new Uint8Array(digest));
-  }
-
-  function makeCode(db) {
-    for (let attempt = 0; attempt < 20; attempt++) {
-      let code = "";
-      const bytes = new Uint8Array(6);
-      crypto.getRandomValues(bytes);
-      for (const b of bytes) code += CODE_CHARS[b % CODE_CHARS.length];
-      if (!db.rooms.some((room) => room.code === code)) return code;
-    }
-    throw new Error("Could not create a room code.");
+  function makeCode() {
+    const bytes = new Uint8Array(6);
+    crypto.getRandomValues(bytes);
+    return [...bytes].map((b) => CODE_CHARS[b % CODE_CHARS.length]).join("");
   }
 
   function label(user) {
@@ -268,6 +341,22 @@
     accountName.textContent = label(user);
     accountBar.classList.remove("hidden");
     document.getElementById("displayNameEdit").value = user?.name || "";
+  }
+
+  async function getValue(key) {
+    const res = await fetch(`${API}/GetValue/${APP_KEY}/${encodeURIComponent(key)}`);
+    if (!res.ok) throw new Error("Could not refresh.");
+    const data = await res.json();
+    return data == null ? "" : String(data);
+  }
+
+  async function setValue(key, value) {
+    const safe = encodeURIComponent(String(value)).slice(0, 900);
+    const res = await fetch(`${API}/UpdateValue/${APP_KEY}/${encodeURIComponent(key)}/${safe}`, {
+      method: "POST",
+      body: ""
+    });
+    if (!res.ok) throw new Error("Could not save.");
   }
 
   function showAuthMode(mode) {
@@ -286,25 +375,29 @@
     document.getElementById("password").autocomplete = signup ? "new-password" : "current-password";
     document.getElementById("authForm").dataset.mode = mode;
     document.getElementById("authError").textContent = "";
-    document.getElementById("authNotice").textContent = "";
   }
 
   function showAuth() {
+    stopPolling();
     home.classList.add("hidden");
     joinScreen.classList.add("hidden");
     chat.classList.add("hidden");
+    roomDock.classList.add("hidden");
     roomTitle.classList.add("hidden");
     accountBar.classList.add("hidden");
     auth.classList.remove("hidden");
   }
 
   function showHome() {
+    stopPolling();
     auth.classList.add("hidden");
     joinScreen.classList.add("hidden");
     chat.classList.add("hidden");
     roomTitle.classList.add("hidden");
     home.classList.remove("hidden");
+    roomDock.classList.remove("hidden");
     accountBar.classList.remove("hidden");
+    renderRoomDock();
   }
 
   async function submitAuth(event) {
@@ -315,18 +408,13 @@
     const name = document.getElementById("displayName").value.trim();
     const confirm = document.getElementById("passwordConfirm").value;
     const errorEl = document.getElementById("authError");
-    const noticeEl = document.getElementById("authNotice");
     errorEl.textContent = "";
-    noticeEl.textContent = "";
-
     if (mode === "signup" && password !== confirm) {
       errorEl.textContent = "Passwords do not match.";
       return;
     }
-
     const db = loadDb();
     const existing = db.users.find((user) => user.email === email);
-
     if (mode === "signup") {
       if (existing) {
         errorEl.textContent = "An account with that email already exists.";
@@ -336,7 +424,7 @@
       const user = {
         id: crypto.randomUUID(),
         email,
-        name: name || email.split("@")[0],
+        name: (name || email.split("@")[0]).slice(0, 30),
         salt,
         passwordHash: await hashPassword(password, salt)
       };
@@ -347,13 +435,11 @@
       showHome();
       return;
     }
-
     if (!existing) {
       errorEl.textContent = "No account with that email. Sign up first.";
       return;
     }
-    const hash = await hashPassword(password, existing.salt);
-    if (hash !== existing.passwordHash) {
+    if (await hashPassword(password, existing.salt) !== existing.passwordHash) {
       errorEl.textContent = "Wrong password.";
       return;
     }
@@ -385,97 +471,163 @@
     showAuthMode("login");
   }
 
-  function addSystem(db, roomCode, text) {
-    db.messages.push({
-      id: db.nextId++,
-      roomCode,
-      kind: "system",
-      name: label(currentUser),
-      text,
-      createdAt: new Date().toISOString()
-    });
-  }
-
-  function createRoom() {
+  async function createRoom() {
     document.getElementById("homeError").textContent = "";
-    const db = loadDb();
-    const room = {
-      code: makeCode(db),
-      name: document.getElementById("roomName").value.trim().slice(0, 40) || `${label(currentUser)}'s room`,
-      createdAt: new Date().toISOString()
-    };
-    db.rooms.push(room);
-    addSystem(db, room.code, `${label(currentUser)} created the room.`);
-    saveDb(db);
-    document.getElementById("roomName").value = "";
-    enterChat(room);
-    addSystemMessage(`Share this code with friends on this browser: ${room.code}`);
+    const name = document.getElementById("roomName").value.trim().slice(0, 40) || `${label(currentUser)}'s room`;
+    try {
+      let code = "";
+      for (let attempt = 0; attempt < 5; attempt++) {
+        code = makeCode();
+        const existing = await getValue("r" + code);
+        if (!existing) break;
+      }
+      await setValue("r" + code, name);
+      await setValue("i" + code, "");
+      rememberRoom({ code, name });
+      document.getElementById("roomName").value = "";
+      await enterChat({ code, name });
+      addSystemMessage(`Share this code: ${code}`);
+    } catch (err) {
+      document.getElementById("homeError").textContent = err.message;
+    }
   }
 
   function showJoin() {
     document.getElementById("homeError").textContent = "";
     home.classList.add("hidden");
+    roomDock.classList.add("hidden");
     joinScreen.classList.remove("hidden");
     document.getElementById("joinCode").focus();
   }
 
-  function joinRoom() {
+  async function joinRoom() {
     const code = document.getElementById("joinCode").value.trim().toUpperCase();
     if (code.length !== 6) {
       document.getElementById("joinError").textContent = "Room codes are 6 characters.";
       return;
     }
-    const db = loadDb();
-    const room = db.rooms.find((item) => item.code === code);
-    if (!room) {
-      document.getElementById("joinError").textContent = "Room not found on this browser.";
-      return;
+    try {
+      const name = await getValue("r" + code);
+      if (!name) {
+        document.getElementById("joinError").textContent = "Room not found. Check the code.";
+        return;
+      }
+      rememberRoom({ code, name });
+      document.getElementById("joinCode").value = "";
+      await enterChat({ code, name });
+    } catch (err) {
+      document.getElementById("joinError").textContent = err.message;
     }
-    addSystem(db, code, `${label(currentUser)} joined the room.`);
-    saveDb(db);
-    enterChat(room);
-    for (const message of db.messages.filter((item) => item.roomCode === code)) renderMessage(message);
   }
 
-  function enterChat(room) {
+  async function openSavedRoom(code) {
+    try {
+      const name = await getValue("r" + code);
+      if (!name) {
+        document.getElementById("homeError").textContent = "That room is no longer available.";
+        return;
+      }
+      rememberRoom({ code, name });
+      await enterChat({ code, name });
+    } catch (err) {
+      document.getElementById("homeError").textContent = err.message;
+    }
+  }
+
+  async function enterChat(room) {
     currentRoom = room.code;
     seen = new Set();
+    knownIndex = "";
     messagesEl.innerHTML = "";
     home.classList.add("hidden");
     joinScreen.classList.add("hidden");
     auth.classList.add("hidden");
+    roomDock.classList.add("hidden");
     chat.classList.remove("hidden");
     roomTitle.textContent = `${room.name} · Code: ${room.code}`;
     roomTitle.classList.remove("hidden");
-    document.getElementById("connectionStatus").textContent = "Saved on this browser";
     document.getElementById("messageInput").focus();
+    await poll();
+    startPolling();
   }
 
-  function sendMessage() {
-    const input = document.getElementById("messageInput");
-    const text = input.value.trim();
-    if (!text || !currentRoom) return;
-    const db = loadDb();
-    const message = {
-      id: db.nextId++,
-      roomCode: currentRoom,
-      kind: "chat",
-      name: label(currentUser),
-      text: text.slice(0, 2000),
-      createdAt: new Date().toISOString()
+  function startPolling() {
+    stopPolling();
+    pollTimer = setInterval(poll, POLL_MS);
+  }
+
+  function stopPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  function setStatus(text, color) {
+    const el = document.getElementById("connectionStatus");
+    el.textContent = text;
+    el.style.color = color;
+  }
+
+  async function poll() {
+    if (!currentRoom) return;
+    try {
+      const index = await getValue("i" + currentRoom);
+      if (index && index !== knownIndex) {
+        const keys = index.split(",").filter(Boolean);
+        for (const key of keys) {
+          if (seen.has(key)) continue;
+          const raw = await getValue(key);
+          if (!raw) continue;
+          renderMessage(decodeMessage(key, raw));
+        }
+        knownIndex = index;
+      }
+      setStatus("Live", "#1b7a3a");
+    } catch (err) {
+      setStatus(err.message || "Could not refresh", "#d33");
+    }
+  }
+
+  function decodeMessage(key, raw) {
+    const [name, createdAt, text] = raw.split("|");
+    return {
+      id: key,
+      name: decodeURIComponent(name || "User"),
+      createdAt: decodeURIComponent(createdAt || ""),
+      text: decodeURIComponent(text || "")
     };
-    db.messages.push(message);
-    saveDb(db);
-    input.value = "";
-    renderMessage(message);
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById("messageInput");
+    const text = input.value.trim().slice(0, 300);
+    if (!text || !currentRoom) return;
+    input.disabled = true;
+    document.getElementById("sendButton").disabled = true;
+    try {
+      const key = "m" + currentRoom + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const payload = [
+        encodeURIComponent(label(currentUser)),
+        encodeURIComponent(new Date().toISOString()),
+        encodeURIComponent(text)
+      ].join("|");
+      await setValue(key, payload);
+      const index = await getValue("i" + currentRoom);
+      const keys = index ? index.split(",").filter(Boolean) : [];
+      keys.push(key);
+      await setValue("i" + currentRoom, keys.slice(-25).join(","));
+      input.value = "";
+      await poll();
+    } catch (err) {
+      setStatus(err.message, "#d33");
+    } finally {
+      input.disabled = false;
+      document.getElementById("sendButton").disabled = false;
+      input.focus();
+    }
   }
 
   function leaveRoom() {
-    if (currentRoom && currentUser) {
-      const db = loadDb();
-      addSystem(db, currentRoom, `${label(currentUser)} left the room.`);
-      saveDb(db);
-    }
+    stopPolling();
     currentRoom = null;
     chat.classList.add("hidden");
     roomTitle.classList.add("hidden");
@@ -485,10 +637,6 @@
   function renderMessage(message) {
     if (seen.has(message.id)) return;
     seen.add(message.id);
-    if (message.kind === "system") {
-      addSystemMessage(message.text);
-      return;
-    }
     const div = document.createElement("div");
     div.className = "message";
     if (message.name === label(currentUser)) div.classList.add("mine");
@@ -520,14 +668,13 @@
 
   function goHome() {
     joinScreen.classList.add("hidden");
-    home.classList.remove("hidden");
+    showHome();
     document.getElementById("joinError").textContent = "";
   }
 
   function boot() {
     const db = loadDb();
-    const id = localStorage.getItem(SESSION_KEY);
-    const user = db.users.find((item) => item.id === id);
+    const user = db.users.find((item) => item.id === localStorage.getItem(SESSION_KEY));
     if (!user) {
       showAuthMode("login");
       return;
