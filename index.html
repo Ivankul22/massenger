@@ -227,8 +227,8 @@
 </div>
 
 <script>
-  const APP_KEY = "vckxgkui";
-  const API = "https://keyvalue.immanuel.co/api/KeyVal";
+  const API = "https://api.keyval.org";
+  const KEY_PREFIX = "mshggp2026";
   const POLL_MS = 2000;
   const DB_KEY = "messenger.db";
   const SESSION_KEY = "messenger.session";
@@ -344,19 +344,38 @@
   }
 
   async function getValue(key) {
-    const res = await fetch(`${API}/GetValue/${APP_KEY}/${encodeURIComponent(key)}`);
+    const res = await fetch(`${API}/get/${encodeURIComponent(key)}`);
     if (!res.ok) throw new Error("Could not refresh.");
     const data = await res.json();
-    return data == null ? "" : String(data);
+    if (!data || data.status === "-KEY-DOESNT-EXISTS-") return "";
+    return data.val == null ? "" : String(data.val);
   }
 
   async function setValue(key, value) {
-    const safe = encodeURIComponent(String(value)).slice(0, 900);
-    const res = await fetch(`${API}/UpdateValue/${APP_KEY}/${encodeURIComponent(key)}/${safe}`, {
-      method: "POST",
-      body: ""
-    });
+    const safe = encodeURIComponent(String(value)).slice(0, 280);
+    const res = await fetch(`${API}/set/${encodeURIComponent(key)}/${safe}`);
     if (!res.ok) throw new Error("Could not save.");
+    const data = await res.json().catch(() => ({}));
+    if (data.status && data.status !== "SUCCESS") throw new Error("Could not save.");
+  }
+
+  function roomKey(code) { return KEY_PREFIX + "r" + code; }
+  function indexKey(code) { return KEY_PREFIX + "i" + code; }
+  function messageKey(code, id) { return KEY_PREFIX + "m" + code + id; }
+
+  function localMessages(code) {
+    try {
+      const items = JSON.parse(localStorage.getItem("messenger.msgs." + code) || "[]");
+      return Array.isArray(items) ? items : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function rememberMessage(code, message) {
+    const items = localMessages(code).filter((item) => item.id !== message.id);
+    items.push(message);
+    localStorage.setItem("messenger.msgs." + code, JSON.stringify(items.slice(-40)));
   }
 
   function showAuthMode(mode) {
@@ -478,11 +497,10 @@
       let code = "";
       for (let attempt = 0; attempt < 5; attempt++) {
         code = makeCode();
-        const existing = await getValue("r" + code);
+        const existing = await getValue(roomKey(code));
         if (!existing) break;
       }
-      await setValue("r" + code, name);
-      await setValue("i" + code, "");
+      await setValue(roomKey(code), name);
       rememberRoom({ code, name });
       document.getElementById("roomName").value = "";
       await enterChat({ code, name });
@@ -507,7 +525,7 @@
       return;
     }
     try {
-      const name = await getValue("r" + code);
+      const name = await getValue(roomKey(code));
       if (!name) {
         document.getElementById("joinError").textContent = "Room not found. Check the code.";
         return;
@@ -522,7 +540,7 @@
 
   async function openSavedRoom(code) {
     try {
-      const name = await getValue("r" + code);
+      const name = await getValue(roomKey(code));
       if (!name) {
         document.getElementById("homeError").textContent = "That room is no longer available.";
         return;
@@ -539,6 +557,7 @@
     seen = new Set();
     knownIndex = "";
     messagesEl.innerHTML = "";
+    for (const message of localMessages(room.code)) renderMessage(message);
     home.classList.add("hidden");
     joinScreen.classList.add("hidden");
     auth.classList.add("hidden");
@@ -570,60 +589,65 @@
   async function poll() {
     if (!currentRoom) return;
     try {
-      const index = await getValue("i" + currentRoom);
-      if (index && index !== knownIndex) {
-        const keys = index.split(",").filter(Boolean);
-        for (const key of keys) {
-          if (seen.has(key)) continue;
-          const raw = await getValue(key);
-          if (!raw) continue;
-          renderMessage(decodeMessage(key, raw));
-        }
-        knownIndex = index;
+      const index = await getValue(indexKey(currentRoom));
+      const keys = index ? index.split(",").filter(Boolean) : [];
+      for (const id of keys) {
+        if (seen.has(id)) continue;
+        const raw = await getValue(messageKey(currentRoom, id));
+        if (!raw) continue;
+        const message = decodeMessage(id, raw);
+        rememberMessage(currentRoom, message);
+        renderMessage(message);
       }
-      setStatus("Live", "#1b7a3a");
+      knownIndex = index;
+      setStatus(keys.length ? "Live" : "Live · no messages yet", "#1b7a3a");
     } catch (err) {
       setStatus(err.message || "Could not refresh", "#d33");
     }
   }
 
-  function decodeMessage(key, raw) {
-    const [name, createdAt, text] = raw.split("|");
+  function decodeMessage(id, raw) {
+    const [name, createdAt, text] = String(raw).split("~");
     return {
-      id: key,
-      name: decodeURIComponent(name || "User"),
-      createdAt: decodeURIComponent(createdAt || ""),
-      text: decodeURIComponent(text || "")
+      id,
+      name: name || "User",
+      createdAt: createdAt || "",
+      text: text || ""
     };
   }
 
   async function sendMessage() {
     const input = document.getElementById("messageInput");
-    const text = input.value.trim().slice(0, 300);
+    const text = input.value.trim().slice(0, 180).replace(/~/g, "-");
     if (!text || !currentRoom) return;
-    input.disabled = true;
-    document.getElementById("sendButton").disabled = true;
+    const id = Date.now().toString(36);
+    const message = {
+      id,
+      name: label(currentUser).replace(/~/g, ""),
+      createdAt: new Date().toISOString(),
+      text
+    };
+    input.value = "";
+    rememberMessage(currentRoom, message);
+    renderMessage(message);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
     try {
-      const key = "m" + currentRoom + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-      const payload = [
-        encodeURIComponent(label(currentUser)),
-        encodeURIComponent(new Date().toISOString()),
-        encodeURIComponent(text)
-      ].join("|");
-      await setValue(key, payload);
-      const index = await getValue("i" + currentRoom);
-      const keys = index ? index.split(",").filter(Boolean) : [];
-      keys.push(key);
-      await setValue("i" + currentRoom, keys.slice(-25).join(","));
-      input.value = "";
-      await poll();
+      await setValue(messageKey(currentRoom, id), `${message.name}~${message.createdAt}~${message.text}`);
+      const index = await getValue(indexKey(currentRoom));
+      const ids = index ? index.split(",").filter(Boolean) : [];
+      ids.push(id);
+      let next = ids.join(",");
+      while (next.length > 250 && ids.length > 1) {
+        ids.shift();
+        next = ids.join(",");
+      }
+      await setValue(indexKey(currentRoom), next);
+      knownIndex = next;
+      setStatus("Live", "#1b7a3a");
     } catch (err) {
       setStatus(err.message, "#d33");
-    } finally {
-      input.disabled = false;
-      document.getElementById("sendButton").disabled = false;
-      input.focus();
     }
+    input.focus();
   }
 
   function leaveRoom() {
