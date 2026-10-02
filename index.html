@@ -6,112 +6,36 @@
   <title>Messenger</title>
   <style>
     :root {
-      --bg: #f2f4f7;
-      --panel: #fff;
-      --text: #222;
-      --muted: #666;
-      --line: #ddd;
-      --input: #fff;
-      --input-border: #ccc;
-      --bubble: #fff;
-      --mine: #e8eaff;
-      --dock: #f7f7fb;
-      --messages: #f7f7f7;
-      --accent: #5865f2;
-      --accent-2: #4752c4;
-      --danger: #d33;
+      --bg: #f2f4f7; --panel: #fff; --text: #222; --muted: #666; --line: #ddd;
+      --input: #fff; --input-border: #ccc; --bubble: #fff; --mine: #e8eaff;
+      --dock: #f7f7fb; --messages: #f7f7f7; --accent: #5865f2; --accent-2: #4752c4; --danger: #d33;
     }
     html[data-theme="dark"] {
-      --bg: #11131a;
-      --panel: #1b1e27;
-      --text: #f2f3f5;
-      --muted: #b5b8c5;
-      --line: #2c3140;
-      --input: #12141b;
-      --input-border: #3a4054;
-      --bubble: #262a36;
-      --mine: #343c6e;
-      --dock: #151821;
-      --messages: #12141b;
-      --accent: #7b86ff;
-      --accent-2: #6670e6;
-      --danger: #ff8b8b;
+      --bg: #11131a; --panel: #1b1e27; --text: #f2f3f5; --muted: #b5b8c5; --line: #2c3140;
+      --input: #12141b; --input-border: #3a4054; --bubble: #262a36; --mine: #343c6e;
+      --dock: #151821; --messages: #12141b; --accent: #7b86ff; --accent-2: #6670e6; --danger: #ff8b8b;
     }
     * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-    .app {
-      width: 100%;
-      max-width: 900px;
-      height: 100vh;
-      margin: 0 auto;
-      background: var(--panel);
-      display: flex;
-      flex-direction: column;
-    }
-    header {
-      position: relative;
-      padding: 18px 20px;
-      background: var(--accent);
-      color: #fff;
-      text-align: center;
-    }
+    body { margin: 0; min-height: 100vh; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
+    .app { width: 100%; max-width: 900px; height: 100vh; margin: 0 auto; background: var(--panel); display: flex; flex-direction: column; }
+    header { position: relative; padding: 18px 20px; background: var(--accent); color: #fff; text-align: center; }
     header h2 { margin: 0; }
-    #themeButton {
-      position: absolute;
-      top: 14px;
-      left: 14px;
-      background: rgba(255, 255, 255, 0.2);
-    }
-    #accountBar {
-      position: absolute;
-      top: 14px;
-      right: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-    }
-    #accountName {
-      max-width: 140px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    #roomTitle { margin-top: 5px; font-size: 14px; opacity: 0.9; }
+    #themeButton { position: absolute; top: 14px; left: 14px; background: rgba(255,255,255,.2); }
+    #accountBar { position: absolute; top: 14px; right: 14px; display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    #accountName { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: transparent; color: #fff; padding: 6px 8px; }
+    #roomTitle { margin-top: 5px; font-size: 14px; opacity: .9; }
     .screen { padding: 35px 20px 16px; text-align: center; overflow: auto; }
     .screen h1, .screen h2 { margin-top: 0; }
     .lede { color: var(--muted); margin-top: 0; }
-    input {
-      width: 100%;
-      max-width: 420px;
-      padding: 14px;
-      margin: 8px 0;
-      border: 1px solid var(--input-border);
-      border-radius: 9px;
-      font-size: 16px;
-      outline: none;
-      background: var(--input);
-      color: var(--text);
+    input, select, textarea {
+      width: 100%; max-width: 420px; padding: 14px; margin: 8px 0; border: 1px solid var(--input-border);
+      border-radius: 9px; font-size: 16px; outline: none; background: var(--input); color: var(--text); font-family: inherit;
     }
-    input:focus { border-color: var(--accent); }
-    button {
-      padding: 13px 20px;
-      margin: 8px 4px;
-      border: 0;
-      border-radius: 9px;
-      background: var(--accent);
-      color: #fff;
-      font-size: 16px;
-      cursor: pointer;
-    }
+    textarea { min-height: 70px; resize: vertical; }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    button { padding: 13px 20px; margin: 8px 4px; border: 0; border-radius: 9px; background: var(--accent); color: #fff; font-size: 16px; cursor: pointer; }
     button:hover { background: var(--accent-2); }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
     .secondary { background: #777; }
     .danger { background: #a33; }
     .hidden { display: none !important; }
@@ -121,90 +45,43 @@
     .tabs button.active { background: var(--accent); color: #fff; }
     #chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     #messages { flex: 1; overflow-y: auto; padding: 20px; background: var(--messages); }
-    .message {
-      background: var(--bubble);
-      color: var(--text);
-      padding: 10px 14px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      max-width: 75%;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-      overflow-wrap: anywhere;
-      position: relative;
-    }
+    .message { background: var(--bubble); color: var(--text); padding: 10px 14px; margin-bottom: 10px; border-radius: 10px; max-width: 75%; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow-wrap: anywhere; }
     .message.mine { margin-left: auto; background: var(--mine); }
-    .name { font-size: 12px; font-weight: bold; color: var(--accent); margin-bottom: 4px; }
+    .name { font-size: 12px; font-weight: bold; color: var(--accent); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+    .name button { margin: 0; padding: 0; background: transparent; color: var(--accent); font-size: 12px; font-weight: bold; }
     .time { color: var(--muted); font-weight: normal; }
-    .delete-msg {
-      margin: 0 0 0 8px;
-      padding: 0 4px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 12px;
-    }
+    .delete-msg { margin-left: auto; padding: 0 4px; background: transparent; color: var(--muted); font-size: 12px; }
+    .gif-message { display: block; max-width: 220px; border-radius: 8px; margin-top: 4px; }
     .system-message { text-align: center; color: var(--muted); font-size: 13px; margin: 10px 0; }
-    .chat-input {
-      display: flex;
-      padding: 12px;
-      border-top: 1px solid var(--line);
-      gap: 8px;
-      background: var(--panel);
-    }
+    .chat-input { display: flex; padding: 12px; border-top: 1px solid var(--line); gap: 8px; background: var(--panel); }
     .chat-input input { flex: 1; max-width: none; margin: 0; }
     .chat-input button { margin: 0; }
-    .chat-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 6px 12px;
-      border-bottom: 1px solid var(--line);
-      font-size: 13px;
-      color: var(--muted);
-      gap: 8px;
-    }
+    .chat-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); gap: 8px; }
     button.small { padding: 6px 12px; margin: 0; font-size: 13px; }
-    header button.small { background: rgba(255, 255, 255, 0.2); }
-    header button.small:hover { background: rgba(255, 255, 255, 0.32); }
-    #roomDock {
-      margin-top: auto;
-      border-top: 1px solid var(--line);
-      background: var(--dock);
-      padding: 10px 14px 14px;
-      max-height: 240px;
-      overflow: auto;
-    }
+    header button.small, #accountName { background: rgba(255,255,255,.2); }
+    header button.small:hover, #accountName:hover { background: rgba(255,255,255,.32); }
+    #roomDock { margin-top: auto; border-top: 1px solid var(--line); background: var(--dock); padding: 10px 14px 14px; max-height: 240px; overflow: auto; }
     #roomDock h3 { margin: 0 0 8px; font-size: 13px; text-align: left; color: var(--muted); }
-    .room-row {
-      width: 100%;
-      margin: 0 0 6px;
-      padding: 0;
-      display: flex;
-      background: var(--panel);
-      color: var(--text);
-      border: 1px solid var(--line);
-      overflow: hidden;
-    }
-    .room-open {
-      flex: 1;
-      margin: 0;
-      padding: 10px 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: transparent;
-      color: var(--text);
-      text-align: left;
-      border-radius: 0;
-    }
+    .room-row { width: 100%; margin: 0 0 6px; padding: 0; display: flex; background: var(--panel); color: var(--text); border: 1px solid var(--line); overflow: hidden; }
+    .room-open { flex: 1; margin: 0; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; background: transparent; color: var(--text); text-align: left; border-radius: 0; }
     .room-open:hover { background: var(--mine); }
-    .room-delete {
-      margin: 0;
-      border-radius: 0;
-      background: #a33;
-      padding: 10px 12px;
-    }
+    .room-delete { margin: 0; border-radius: 0; background: #a33; padding: 10px 12px; }
     .room-code { font-family: monospace; letter-spacing: 1px; color: var(--accent); }
     .empty-rooms { color: var(--muted); font-size: 13px; text-align: left; margin: 0; }
+    #gifPanel { border-top: 1px solid var(--line); background: var(--dock); padding: 10px; max-height: 220px; overflow: auto; }
+    .gif-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+    .gif-tags button, .gif-grid button { margin: 0; padding: 6px 10px; font-size: 13px; background: var(--panel); color: var(--text); border: 1px solid var(--line); }
+    .gif-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .gif-grid img { width: 96px; height: 72px; object-fit: cover; border-radius: 6px; display: block; }
+    .modal { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 5; padding: 16px; }
+    .card { width: min(420px, 100%); background: var(--panel); color: var(--text); border-radius: 12px; overflow: hidden; }
+    .banner { height: 70px; }
+    .card-body { padding: 0 16px 16px; text-align: left; }
+    .avatar { width: 72px; height: 72px; border-radius: 50%; margin-top: -36px; border: 5px solid var(--panel); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; color: #fff; position: relative; }
+    .status-dot { width: 16px; height: 16px; border-radius: 50%; border: 3px solid var(--panel); position: absolute; right: -2px; bottom: -2px; }
+    .online { background: #3ba55d; } .idle { background: #faa81a; } .dnd { background: #ed4245; } .offline { background: #80848e; }
+    .card h2 { margin: 8px 0 2px; }
+    .about { color: var(--muted); margin: 8px 0; white-space: pre-wrap; }
     @media (max-width: 600px) {
       .message { max-width: 88%; }
       #accountBar, #themeButton { position: static; }
@@ -218,7 +95,7 @@
     <button id="themeButton" class="small" type="button" onclick="toggleTheme()">Dark</button>
     <h2>Messenger</h2>
     <div id="accountBar" class="hidden">
-      <span id="accountName"></span>
+      <button id="accountName" class="small" type="button" onclick="openOwnProfile()">Account</button>
       <button class="small" type="button" onclick="logout()">Log out</button>
     </div>
     <div id="roomTitle" class="hidden"></div>
@@ -247,11 +124,7 @@
 
   <div id="home" class="screen hidden">
     <h1>Welcome</h1>
-    <p class="lede">Rooms stay on your account, so they show up on your other devices. Delete only removes a chat for you.</p>
-    <input id="displayNameEdit" maxlength="20" placeholder="Display name">
-    <br>
-    <button class="secondary" type="button" onclick="saveDisplayName()">Save name</button>
-    <br>
+    <p class="lede">Open your profile from your name. Rooms stay on your account across devices.</p>
     <input id="roomName" maxlength="24" placeholder="New room name (optional)">
     <br>
     <button type="button" onclick="createRoom()">Create Room</button>
@@ -282,26 +155,67 @@
       </span>
     </div>
     <div id="messages"></div>
+    <div id="gifPanel" class="hidden">
+      <div class="gif-tags" id="gifTags"></div>
+      <div class="gif-grid" id="gifGrid"></div>
+    </div>
     <div class="chat-input">
       <input id="messageInput" maxlength="160" placeholder="Type a message..." autocomplete="off">
+      <button class="secondary" type="button" onclick="toggleGifs()">GIF</button>
       <button id="sendButton" type="button" onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+</div>
+
+<div id="profileModal" class="modal hidden" onclick="if (event.target.id === 'profileModal') closeProfile()">
+  <div class="card">
+    <div id="profileBanner" class="banner"></div>
+    <div class="card-body">
+      <div id="profileAvatar" class="avatar">A<span id="profileStatus" class="status-dot online"></span></div>
+      <h2 id="profileName">Name</h2>
+      <div id="profileCustom" class="about"></div>
+      <strong>About me</strong>
+      <div id="profileAbout" class="about">No bio yet.</div>
+      <div id="profileViewActions">
+        <button type="button" class="secondary" onclick="closeProfile()">Close</button>
+        <button id="editProfileButton" type="button" onclick="editProfile()">Edit profile</button>
+      </div>
+      <form id="profileForm" class="hidden" onsubmit="saveProfile(event)">
+        <input id="profileNameInput" maxlength="20" placeholder="Display name">
+        <select id="profileStatusInput">
+          <option value="online">Online</option>
+          <option value="idle">Idle</option>
+          <option value="dnd">Do not disturb</option>
+          <option value="offline">Invisible</option>
+        </select>
+        <input id="profileColorInput" type="color" value="#5865f2">
+        <input id="profileCustomInput" maxlength="40" placeholder="Custom status">
+        <textarea id="profileAboutInput" maxlength="80" placeholder="About me"></textarea>
+        <br>
+        <button type="submit">Save</button>
+        <button class="secondary" type="button" onclick="closeProfile()">Cancel</button>
+      </form>
     </div>
   </div>
 </div>
 
 <script>
   const API = "https://api.keyval.org";
+  const GIF_API = "https://api.otakugifs.xyz/gif?reaction=";
   const KEY_PREFIX = "mshggp2026";
   const POLL_MS = 2000;
   const SESSION_KEY = "messenger.session";
   const THEME_KEY = "messenger.theme";
   const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const GIF_TAGS = ["wave", "hug", "laugh", "cry", "dance", "thumbsup", "pat", "shrug", "clap", "wink"];
+  const SLURS = ["nigger", "nigga", "chink", "gook", "spic", "kike", "wetback", "raghead", "towelhead", "faggot", "tranny", "retard"];
+  const sentTimes = [];
 
   let currentUser = null;
   let currentRoom = null;
   let pollTimer = null;
-  let seen = new Set();
   let hidden = new Set();
+  let viewingId = null;
 
   const auth = document.getElementById("auth");
   const home = document.getElementById("home");
@@ -319,44 +233,24 @@
     localStorage.setItem(THEME_KEY, next);
     document.getElementById("themeButton").textContent = next === "dark" ? "Light" : "Dark";
   }
-
   async function toggleTheme() {
     const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     applyTheme(next);
-    if (currentUser) {
-      setValue(themeKey(currentUser.id), next).catch(() => {});
-    }
+    if (currentUser) setValue(themeKey(currentUser.id), next).catch(() => {});
   }
-
-  function bytesToHex(bytes) {
-    return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
-  }
-
+  function bytesToHex(bytes) { return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join(""); }
   async function sha256(text) {
     const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
     return bytesToHex(new Uint8Array(digest));
   }
-
-  async function userIdFromEmail(email) {
-    return (await sha256("user:" + email)).slice(0, 12);
-  }
-
-  function randomSalt() {
-    const bytes = new Uint8Array(8);
-    crypto.getRandomValues(bytes);
-    return bytesToHex(bytes);
-  }
-
-  function makeCode() {
-    const bytes = new Uint8Array(6);
-    crypto.getRandomValues(bytes);
-    return [...bytes].map((b) => CODE_CHARS[b % CODE_CHARS.length]).join("");
-  }
-
+  async function userIdFromEmail(email) { return (await sha256("user:" + email)).slice(0, 12); }
+  function randomSalt() { const b = new Uint8Array(8); crypto.getRandomValues(b); return bytesToHex(b); }
+  function makeCode() { const b = new Uint8Array(6); crypto.getRandomValues(b); return [...b].map((n) => CODE_CHARS[n % CODE_CHARS.length]).join(""); }
   function userKey(id) { return KEY_PREFIX + "u" + id; }
   function listKey(id) { return KEY_PREFIX + "l" + id; }
   function themeKey(id) { return KEY_PREFIX + "t" + id; }
   function hideKey(id, code) { return KEY_PREFIX + "h" + id + code; }
+  function profileKey(id) { return KEY_PREFIX + "p" + id; }
   function roomKey(code) { return KEY_PREFIX + "r" + code; }
   function indexKey(code) { return KEY_PREFIX + "i" + code; }
   function messageKey(code, id) { return KEY_PREFIX + "m" + code + id; }
@@ -368,7 +262,6 @@
     if (!data || data.status === "-KEY-DOESNT-EXISTS-") return "";
     return data.val == null ? "" : String(data.val);
   }
-
   async function setValue(key, value) {
     const safe = encodeURIComponent(String(value)).slice(0, 260);
     const res = await fetch(`${API}/set/${encodeURIComponent(key)}/${safe}`);
@@ -376,39 +269,25 @@
     const data = await res.json().catch(() => ({}));
     if (data.status && data.status !== "SUCCESS") throw new Error("Could not save.");
   }
-
   function parseUser(id, email, raw) {
     const [salt, passwordHash, name] = String(raw).split("~");
     if (!salt || !passwordHash) return null;
     return { id, email, salt, passwordHash, name: name || email.split("@")[0] };
   }
-
-  function packUser(user) {
-    return [user.salt, user.passwordHash, user.name.replace(/~/g, "")].join("~");
-  }
-
+  function packUser(user) { return [user.salt, user.passwordHash, user.name.replace(/~/g, "")].join("~"); }
   function parseRooms(raw) {
-    if (!raw) return [];
+    if (!raw || raw === "-") return [];
     return raw.split(",").filter(Boolean).map((part) => {
       const [code, name] = part.split(":");
       return { code, name: decodeURIComponent(name || code) };
     }).filter((room) => room.code);
   }
-
-  function packRooms(rooms) {
-    return rooms.map((room) => room.code + ":" + encodeURIComponent(room.name || room.code)).join(",");
-  }
-
-  async function loadRooms() {
-    return parseRooms(await getValue(listKey(currentUser.id)));
-  }
-
+  function packRooms(rooms) { return rooms.map((room) => room.code + ":" + encodeURIComponent(room.name || room.code)).join(","); }
+  async function loadRooms() { return parseRooms(await getValue(listKey(currentUser.id))); }
   async function saveRooms(rooms) {
-    const packed = packRooms(rooms.slice(-8));
-    await setValue(listKey(currentUser.id), packed || "-");
+    await setValue(listKey(currentUser.id), packRooms(rooms.slice(-8)) || "-");
     renderRoomDock(rooms.slice(-8));
   }
-
   function renderRoomDock(rooms) {
     const list = document.getElementById("roomList");
     list.innerHTML = "";
@@ -443,96 +322,67 @@
       list.appendChild(row);
     }
   }
-
   async function rememberRoom(room) {
     const rooms = (await loadRooms()).filter((item) => item.code !== room.code);
     rooms.push({ code: room.code, name: room.name });
     await saveRooms(rooms);
   }
-
   async function deleteRoom(code) {
     if (!confirm("Delete this chat for you only? Other people keep it.")) return;
-    const rooms = (await loadRooms()).filter((item) => item.code !== code);
-    await saveRooms(rooms);
-    localStorage.removeItem("messenger.msgs." + currentUser.id + "." + code);
+    await saveRooms((await loadRooms()).filter((item) => item.code !== code));
     if (currentRoom === code) leaveRoom();
   }
-
-  async function deleteCurrentRoom() {
-    if (currentRoom) await deleteRoom(currentRoom);
-  }
-
+  async function deleteCurrentRoom() { if (currentRoom) await deleteRoom(currentRoom); }
   async function hideMessage(id) {
     hidden.add(id);
     const ids = [...hidden].slice(-18);
     hidden = new Set(ids);
     await setValue(hideKey(currentUser.id, currentRoom), ids.join(",") || "-");
-    redraw();
+    const node = messagesEl.querySelector(`[data-id="${id}"]`);
+    if (node) node.remove();
   }
-
   function setAccount(user) {
     currentUser = user;
     accountName.textContent = user.name;
     accountBar.classList.remove("hidden");
-    document.getElementById("displayNameEdit").value = user.name || "";
     localStorage.setItem(SESSION_KEY, JSON.stringify({ id: user.id, email: user.email }));
   }
-
   function showAuthMode(mode) {
     const signup = mode === "signup";
     document.getElementById("loginTab").classList.toggle("active", !signup);
     document.getElementById("signupTab").classList.toggle("active", signup);
     document.getElementById("authTitle").textContent = signup ? "Sign up" : "Log in";
-    document.getElementById("authLede").textContent = signup
-      ? "Create an account you can open on any device."
-      : "The same account works on another phone or computer.";
+    document.getElementById("authLede").textContent = signup ? "Create an account you can open on any device." : "The same account works on another phone or computer.";
     document.getElementById("displayName").classList.toggle("hidden", !signup);
     document.querySelectorAll(".signup-only").forEach((el) => el.classList.toggle("hidden", !signup));
     document.getElementById("passwordConfirm").classList.toggle("hidden", !signup);
     document.getElementById("passwordConfirm").required = signup;
     document.getElementById("authSubmit").textContent = signup ? "Create account" : "Log in";
-    document.getElementById("password").autocomplete = signup ? "new-password" : "current-password";
     document.getElementById("authForm").dataset.mode = mode;
     document.getElementById("authError").textContent = "";
   }
-
   function showAuth() {
     stopPolling();
-    home.classList.add("hidden");
-    joinScreen.classList.add("hidden");
-    chat.classList.add("hidden");
-    roomDock.classList.add("hidden");
-    roomTitle.classList.add("hidden");
-    accountBar.classList.add("hidden");
+    home.classList.add("hidden"); joinScreen.classList.add("hidden"); chat.classList.add("hidden");
+    roomDock.classList.add("hidden"); roomTitle.classList.add("hidden"); accountBar.classList.add("hidden");
     auth.classList.remove("hidden");
   }
-
   async function showHome() {
     stopPolling();
-    auth.classList.add("hidden");
-    joinScreen.classList.add("hidden");
-    chat.classList.add("hidden");
-    roomTitle.classList.add("hidden");
-    home.classList.remove("hidden");
-    roomDock.classList.remove("hidden");
+    auth.classList.add("hidden"); joinScreen.classList.add("hidden"); chat.classList.add("hidden");
+    roomTitle.classList.add("hidden"); home.classList.remove("hidden"); roomDock.classList.remove("hidden");
     accountBar.classList.remove("hidden");
-    try {
-      renderRoomDock(await loadRooms());
-    } catch (err) {
-      document.getElementById("homeError").textContent = err.message;
-    }
+    try { renderRoomDock(await loadRooms()); } catch (err) { document.getElementById("homeError").textContent = err.message; }
   }
-
   async function submitAuth(event) {
     event.preventDefault();
     const mode = document.getElementById("authForm").dataset.mode || "login";
     const email = document.getElementById("email").value.trim().toLowerCase();
     const password = document.getElementById("password").value;
     const name = document.getElementById("displayName").value.trim();
-    const confirm = document.getElementById("passwordConfirm").value;
     const errorEl = document.getElementById("authError");
     errorEl.textContent = "";
-    if (mode === "signup" && password !== confirm) {
+    if (mode === "signup" && password !== document.getElementById("passwordConfirm").value) {
       errorEl.textContent = "Passwords do not match.";
       return;
     }
@@ -540,19 +390,11 @@
       const id = await userIdFromEmail(email);
       const existing = parseUser(id, email, await getValue(userKey(id)));
       if (mode === "signup") {
-        if (existing) {
-          errorEl.textContent = "An account with that email already exists.";
-          return;
-        }
-        const salt = randomSalt();
-        const user = {
-          id,
-          email,
-          salt,
-          passwordHash: await sha256(salt + ":" + password),
-          name: (name || email.split("@")[0]).slice(0, 20)
-        };
+        if (existing) { errorEl.textContent = "An account with that email already exists."; return; }
+        const user = { id, email, salt: randomSalt(), name: (name || email.split("@")[0]).slice(0, 20) };
+        user.passwordHash = await sha256(user.salt + ":" + password);
         await setValue(userKey(id), packUser(user));
+        await setValue(profileKey(id), packProfile({ name: user.name, status: "online", color: "5865f2", custom: "", about: "" }));
         setAccount(user);
         await showHome();
         return;
@@ -565,101 +407,55 @@
       const theme = await getValue(themeKey(id));
       if (theme === "dark" || theme === "light") applyTheme(theme);
       await showHome();
-    } catch (err) {
-      errorEl.textContent = err.message;
-    }
+    } catch (err) { errorEl.textContent = err.message; }
   }
-
-  async function saveDisplayName() {
-    const name = document.getElementById("displayNameEdit").value.trim().slice(0, 20);
-    if (!name || !currentUser) {
-      document.getElementById("homeError").textContent = "Enter a display name.";
-      return;
-    }
-    currentUser.name = name;
-    await setValue(userKey(currentUser.id), packUser(currentUser));
-    setAccount(currentUser);
-    document.getElementById("homeError").textContent = "";
-  }
-
   function logout() {
     localStorage.removeItem(SESSION_KEY);
-    currentUser = null;
-    currentRoom = null;
-    showAuth();
-    showAuthMode("login");
+    currentUser = null; currentRoom = null;
+    showAuth(); showAuthMode("login");
   }
-
   async function createRoom() {
     document.getElementById("homeError").textContent = "";
     const name = document.getElementById("roomName").value.trim().slice(0, 24) || `${currentUser.name}'s room`;
     try {
       let code = "";
-      for (let attempt = 0; attempt < 5; attempt++) {
-        code = makeCode();
-        if (!(await getValue(roomKey(code)))) break;
-      }
+      for (let attempt = 0; attempt < 5; attempt++) { code = makeCode(); if (!(await getValue(roomKey(code)))) break; }
       await setValue(roomKey(code), name);
       await rememberRoom({ code, name });
       document.getElementById("roomName").value = "";
       await enterChat({ code, name });
       addSystemMessage(`Share this code: ${code}`);
-    } catch (err) {
-      document.getElementById("homeError").textContent = err.message;
-    }
+    } catch (err) { document.getElementById("homeError").textContent = err.message; }
   }
-
   function showJoin() {
     document.getElementById("homeError").textContent = "";
-    home.classList.add("hidden");
-    roomDock.classList.add("hidden");
-    joinScreen.classList.remove("hidden");
+    home.classList.add("hidden"); roomDock.classList.add("hidden"); joinScreen.classList.remove("hidden");
     document.getElementById("joinCode").focus();
   }
-
   async function joinRoom() {
     const code = document.getElementById("joinCode").value.trim().toUpperCase();
-    if (code.length !== 6) {
-      document.getElementById("joinError").textContent = "Room codes are 6 characters.";
-      return;
-    }
+    if (code.length !== 6) { document.getElementById("joinError").textContent = "Room codes are 6 characters."; return; }
     try {
       const name = await getValue(roomKey(code));
-      if (!name || name === "-") {
-        document.getElementById("joinError").textContent = "Room not found. Check the code.";
-        return;
-      }
+      if (!name || name === "-") { document.getElementById("joinError").textContent = "Room not found. Check the code."; return; }
       await rememberRoom({ code, name });
       document.getElementById("joinCode").value = "";
       await enterChat({ code, name });
-    } catch (err) {
-      document.getElementById("joinError").textContent = err.message;
-    }
+    } catch (err) { document.getElementById("joinError").textContent = err.message; }
   }
-
   async function openSavedRoom(code) {
     try {
       const name = await getValue(roomKey(code));
-      if (!name || name === "-") {
-        document.getElementById("homeError").textContent = "That room is no longer available.";
-        return;
-      }
+      if (!name || name === "-") { document.getElementById("homeError").textContent = "That room is no longer available."; return; }
       await enterChat({ code, name });
-    } catch (err) {
-      document.getElementById("homeError").textContent = err.message;
-    }
+    } catch (err) { document.getElementById("homeError").textContent = err.message; }
   }
-
   async function enterChat(room) {
     currentRoom = room.code;
-    seen = new Set();
     messagesEl.innerHTML = "";
     const hiddenRaw = await getValue(hideKey(currentUser.id, room.code));
     hidden = new Set(hiddenRaw && hiddenRaw !== "-" ? hiddenRaw.split(",").filter(Boolean) : []);
-    home.classList.add("hidden");
-    joinScreen.classList.add("hidden");
-    auth.classList.add("hidden");
-    roomDock.classList.add("hidden");
+    home.classList.add("hidden"); joinScreen.classList.add("hidden"); auth.classList.add("hidden"); roomDock.classList.add("hidden");
     chat.classList.remove("hidden");
     roomTitle.textContent = `${room.name} · Code: ${room.code}`;
     roomTitle.classList.remove("hidden");
@@ -667,123 +463,114 @@
     await poll();
     startPolling();
   }
-
-  function startPolling() {
-    stopPolling();
-    pollTimer = setInterval(poll, POLL_MS);
-  }
-
-  function stopPolling() {
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = null;
-  }
-
-  function setStatus(text, color) {
-    const el = document.getElementById("connectionStatus");
-    el.textContent = text;
-    el.style.color = color;
-  }
-
+  function startPolling() { stopPolling(); pollTimer = setInterval(poll, POLL_MS); }
+  function stopPolling() { if (pollTimer) clearInterval(pollTimer); pollTimer = null; }
+  function setStatus(text, color) { const el = document.getElementById("connectionStatus"); el.textContent = text; el.style.color = color; }
   function decodeMessage(id, raw) {
-    const [name, createdAt, text] = String(raw).split("~");
-    return { id, name: name || "User", createdAt: createdAt || "", text: text || "" };
+    const parts = String(raw).split("~");
+    if (parts[3] === "gif") return { id, uid: parts[0], name: parts[1] || "User", createdAt: parts[2] || "", kind: "gif", text: parts[4] || "" };
+    return { id, uid: parts[0], name: parts[1] || "User", createdAt: parts[2] || "", kind: "text", text: parts.slice(3).join("~") };
   }
-
   async function poll() {
     if (!currentRoom) return;
     try {
       const index = await getValue(indexKey(currentRoom));
       const ids = index && index !== "-" ? index.split(",").filter(Boolean) : [];
-      const cached = ids.filter((id) => !hidden.has(id)).map((id) => {
-        const known = [...messagesEl.querySelectorAll(".message")].some((node) => node.dataset.id === id);
-        return known ? null : id;
-      }).filter(Boolean);
-      for (const id of cached) {
+      for (const id of ids) {
+        if (hidden.has(id) || messagesEl.querySelector(`[data-id="${id}"]`)) continue;
         const raw = await getValue(messageKey(currentRoom, id));
         if (raw) renderMessage(decodeMessage(id, raw));
       }
       setStatus(ids.length ? "Live" : "Live · no messages yet", "#3dcc7a");
-    } catch (err) {
-      setStatus(err.message || "Could not refresh", "#d33");
-    }
+    } catch (err) { setStatus(err.message || "Could not refresh", "#d33"); }
   }
-
+  function normalize(text) { return text.toLowerCase().replace(/[^a-z]/g, ""); }
+  function blocked(text) {
+    const flat = normalize(text);
+    return SLURS.some((word) => flat.includes(word));
+  }
+  function rateLimited() {
+    const now = Date.now();
+    while (sentTimes.length && now - sentTimes[0] > 1000) sentTimes.shift();
+    if (sentTimes.length >= 20) return true;
+    sentTimes.push(now);
+    return false;
+  }
+  async function publish(message) {
+    const body = message.kind === "gif"
+      ? `${currentUser.id}~${message.name}~${message.createdAt}~gif~${message.text}`
+      : `${currentUser.id}~${message.name}~${message.createdAt}~${message.text}`;
+    await setValue(messageKey(currentRoom, message.id), body);
+    const index = await getValue(indexKey(currentRoom));
+    const ids = index && index !== "-" ? index.split(",").filter(Boolean) : [];
+    ids.push(message.id);
+    let next = ids.join(",");
+    while (next.length > 240 && ids.length > 1) { ids.shift(); next = ids.join(","); }
+    await setValue(indexKey(currentRoom), next);
+  }
   async function sendMessage() {
     const input = document.getElementById("messageInput");
     const text = input.value.trim().slice(0, 140).replace(/~/g, "-");
     if (!text || !currentRoom) return;
-    const id = Date.now().toString(36);
-    const message = {
-      id,
-      name: currentUser.name.replace(/~/g, ""),
-      createdAt: new Date().toISOString(),
-      text
-    };
+    if (blocked(text)) { setStatus("Blocked by auto-mod.", "#d33"); return; }
+    if (rateLimited()) { setStatus("Slow down. Max 20 messages a second.", "#d33"); return; }
+    const message = { id: Date.now().toString(36), uid: currentUser.id, name: currentUser.name.replace(/~/g, ""), createdAt: new Date().toISOString(), kind: "text", text };
     input.value = "";
     renderMessage(message);
-    try {
-      await setValue(messageKey(currentRoom, id), `${message.name}~${message.createdAt}~${message.text}`);
-      const index = await getValue(indexKey(currentRoom));
-      const ids = index && index !== "-" ? index.split(",").filter(Boolean) : [];
-      ids.push(id);
-      let next = ids.join(",");
-      while (next.length > 240 && ids.length > 1) {
-        ids.shift();
-        next = ids.join(",");
-      }
-      await setValue(indexKey(currentRoom), next);
-      setStatus("Live", "#3dcc7a");
-    } catch (err) {
-      setStatus(err.message, "#d33");
-    }
+    try { await publish(message); setStatus("Live", "#3dcc7a"); } catch (err) { setStatus(err.message, "#d33"); }
     input.focus();
   }
-
+  async function sendGif(url) {
+    if (!currentRoom) return;
+    if (rateLimited()) { setStatus("Slow down. Max 20 messages a second.", "#d33"); return; }
+    const message = { id: Date.now().toString(36), uid: currentUser.id, name: currentUser.name.replace(/~/g, ""), createdAt: new Date().toISOString(), kind: "gif", text: url };
+    renderMessage(message);
+    document.getElementById("gifPanel").classList.add("hidden");
+    try { await publish(message); setStatus("Live", "#3dcc7a"); } catch (err) { setStatus(err.message, "#d33"); }
+  }
   function leaveRoom() {
-    stopPolling();
-    currentRoom = null;
-    chat.classList.add("hidden");
-    roomTitle.classList.add("hidden");
+    stopPolling(); currentRoom = null;
+    chat.classList.add("hidden"); roomTitle.classList.add("hidden");
+    document.getElementById("gifPanel").classList.add("hidden");
     showHome();
   }
-
-  function redraw() {
-    const nodes = [...messagesEl.querySelectorAll(".message")];
-    for (const node of nodes) {
-      if (hidden.has(node.dataset.id)) node.remove();
-    }
-  }
-
   function renderMessage(message) {
     if (hidden.has(message.id) || messagesEl.querySelector(`[data-id="${message.id}"]`)) return;
     const div = document.createElement("div");
     div.className = "message";
     div.dataset.id = message.id;
-    if (message.name === currentUser.name) div.classList.add("mine");
+    if (message.uid === currentUser.id || message.name === currentUser.name) div.classList.add("mine");
     const name = document.createElement("div");
     name.className = "name";
+    const who = document.createElement("button");
+    who.type = "button";
+    who.textContent = message.name;
+    who.onclick = () => openProfile(message.uid || "");
     const time = document.createElement("span");
     time.className = "time";
     const date = new Date(message.createdAt);
-    time.textContent = Number.isNaN(date.getTime())
-      ? ""
-      : " · " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    name.textContent = message.name;
-    name.appendChild(time);
+    time.textContent = Number.isNaN(date.getTime()) ? "" : " · " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "delete-msg";
     remove.textContent = "Delete";
     remove.onclick = () => hideMessage(message.id);
-    name.appendChild(remove);
-    const text = document.createElement("div");
-    text.textContent = message.text;
+    name.appendChild(who); name.appendChild(time); name.appendChild(remove);
     div.appendChild(name);
-    div.appendChild(text);
+    if (message.kind === "gif" && /^https:\/\//.test(message.text)) {
+      const img = document.createElement("img");
+      img.className = "gif-message";
+      img.src = message.text;
+      img.alt = "GIF";
+      div.appendChild(img);
+    } else {
+      const text = document.createElement("div");
+      text.textContent = message.text;
+      div.appendChild(text);
+    }
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
-
   function addSystemMessage(text) {
     const div = document.createElement("div");
     div.className = "system-message";
@@ -791,43 +578,123 @@
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
+  function goHome() { joinScreen.classList.add("hidden"); showHome(); document.getElementById("joinError").textContent = ""; }
 
-  function goHome() {
-    joinScreen.classList.add("hidden");
-    showHome();
-    document.getElementById("joinError").textContent = "";
+  function packProfile(profile) {
+    return [profile.name, profile.status, profile.color, profile.custom, profile.about].map((part) => String(part || "").replace(/~/g, "")).join("~");
   }
-
+  function parseProfile(raw, fallbackName) {
+    const [name, status, color, custom, about] = String(raw || "").split("~");
+    return {
+      name: name || fallbackName || "User",
+      status: ["online", "idle", "dnd", "offline"].includes(status) ? status : "online",
+      color: /^[0-9a-fA-F]{6}$/.test(color || "") ? color : "5865f2",
+      custom: custom || "",
+      about: about || ""
+    };
+  }
+  async function openProfile(uid) {
+    viewingId = uid || currentUser.id;
+    const own = viewingId === currentUser.id;
+    const raw = await getValue(profileKey(viewingId));
+    const profile = parseProfile(raw, own ? currentUser.name : "User");
+    document.getElementById("profileBanner").style.background = "#" + profile.color;
+    const avatar = document.getElementById("profileAvatar");
+    avatar.style.background = "#" + profile.color;
+    avatar.firstChild.textContent = profile.name.slice(0, 1).toUpperCase();
+    const dot = document.getElementById("profileStatus");
+    dot.className = "status-dot " + profile.status;
+    document.getElementById("profileName").textContent = profile.name;
+    document.getElementById("profileCustom").textContent = profile.custom;
+    document.getElementById("profileAbout").textContent = profile.about || "No bio yet.";
+    document.getElementById("editProfileButton").classList.toggle("hidden", !own);
+    document.getElementById("profileViewActions").classList.remove("hidden");
+    document.getElementById("profileForm").classList.add("hidden");
+    document.getElementById("profileModal").classList.remove("hidden");
+  }
+  function openOwnProfile() { openProfile(currentUser.id); }
+  function closeProfile() { document.getElementById("profileModal").classList.add("hidden"); }
+  async function editProfile() {
+    const profile = parseProfile(await getValue(profileKey(currentUser.id)), currentUser.name);
+    document.getElementById("profileNameInput").value = profile.name;
+    document.getElementById("profileStatusInput").value = profile.status;
+    document.getElementById("profileColorInput").value = "#" + profile.color;
+    document.getElementById("profileCustomInput").value = profile.custom;
+    document.getElementById("profileAboutInput").value = profile.about;
+    document.getElementById("profileViewActions").classList.add("hidden");
+    document.getElementById("profileForm").classList.remove("hidden");
+  }
+  async function saveProfile(event) {
+    event.preventDefault();
+    const profile = {
+      name: document.getElementById("profileNameInput").value.trim().slice(0, 20) || currentUser.name,
+      status: document.getElementById("profileStatusInput").value,
+      color: document.getElementById("profileColorInput").value.replace("#", ""),
+      custom: document.getElementById("profileCustomInput").value.trim().slice(0, 40),
+      about: document.getElementById("profileAboutInput").value.trim().slice(0, 80)
+    };
+    currentUser.name = profile.name;
+    await setValue(userKey(currentUser.id), packUser(currentUser));
+    await setValue(profileKey(currentUser.id), packProfile(profile));
+    setAccount(currentUser);
+    openProfile(currentUser.id);
+  }
+  function toggleGifs() {
+    const panel = document.getElementById("gifPanel");
+    panel.classList.toggle("hidden");
+    if (!panel.classList.contains("hidden") && !document.getElementById("gifTags").childElementCount) buildGifTags();
+  }
+  function buildGifTags() {
+    const tags = document.getElementById("gifTags");
+    for (const tag of GIF_TAGS) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = tag;
+      button.onclick = () => loadGifs(tag);
+      tags.appendChild(button);
+    }
+    loadGifs("wave");
+  }
+  async function loadGifs(tag) {
+    const grid = document.getElementById("gifGrid");
+    grid.innerHTML = "Loading...";
+    const urls = [];
+    for (let i = 0; i < 6; i++) {
+      try {
+        const res = await fetch(GIF_API + tag);
+        const data = await res.json();
+        if (data.url && !urls.includes(data.url)) urls.push(data.url);
+      } catch {}
+    }
+    grid.innerHTML = "";
+    for (const url of urls) {
+      const button = document.createElement("button");
+      button.type = "button";
+      const img = document.createElement("img");
+      img.src = url;
+      img.alt = tag;
+      button.appendChild(img);
+      button.onclick = () => sendGif(url);
+      grid.appendChild(button);
+    }
+    if (!urls.length) grid.textContent = "No GIFs found.";
+  }
   async function boot() {
     applyTheme(localStorage.getItem(THEME_KEY) || "light");
     let session = null;
     try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch {}
-    if (!session?.id || !session.email) {
-      showAuthMode("login");
-      return;
-    }
+    if (!session?.id || !session.email) { showAuthMode("login"); return; }
     try {
       const user = parseUser(session.id, session.email, await getValue(userKey(session.id)));
-      if (!user) {
-        showAuthMode("login");
-        return;
-      }
+      if (!user) { showAuthMode("login"); return; }
       setAccount(user);
       const theme = await getValue(themeKey(user.id));
       if (theme === "dark" || theme === "light") applyTheme(theme);
       await showHome();
-    } catch {
-      showAuthMode("login");
-    }
+    } catch { showAuthMode("login"); }
   }
-
-  document.getElementById("messageInput").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") sendMessage();
-  });
-  document.getElementById("joinCode").addEventListener("keydown", (event) => {
-    if (event.key === "Enter") joinRoom();
-  });
-
+  document.getElementById("messageInput").addEventListener("keydown", (event) => { if (event.key === "Enter") sendMessage(); });
+  document.getElementById("joinCode").addEventListener("keydown", (event) => { if (event.key === "Enter") joinRoom(); });
   showAuthMode("login");
   boot();
 </script>
