@@ -5,31 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Messenger</title>
   <style>
+    :root {
+      --bg: #f2f4f7;
+      --panel: #fff;
+      --text: #222;
+      --muted: #666;
+      --line: #ddd;
+      --input: #fff;
+      --input-border: #ccc;
+      --bubble: #fff;
+      --mine: #e8eaff;
+      --dock: #f7f7fb;
+      --messages: #f7f7f7;
+      --accent: #5865f2;
+      --accent-2: #4752c4;
+      --danger: #d33;
+    }
+    html[data-theme="dark"] {
+      --bg: #11131a;
+      --panel: #1b1e27;
+      --text: #f2f3f5;
+      --muted: #b5b8c5;
+      --line: #2c3140;
+      --input: #12141b;
+      --input-border: #3a4054;
+      --bubble: #262a36;
+      --mine: #343c6e;
+      --dock: #151821;
+      --messages: #12141b;
+      --accent: #7b86ff;
+      --accent-2: #6670e6;
+      --danger: #ff8b8b;
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
       font-family: Arial, sans-serif;
-      background: #f2f4f7;
-      color: #222;
+      background: var(--bg);
+      color: var(--text);
     }
     .app {
       width: 100%;
       max-width: 900px;
       height: 100vh;
       margin: 0 auto;
-      background: #fff;
+      background: var(--panel);
       display: flex;
       flex-direction: column;
     }
     header {
       position: relative;
       padding: 18px 20px;
-      background: #5865f2;
+      background: var(--accent);
       color: #fff;
       text-align: center;
     }
     header h2 { margin: 0; }
+    #themeButton {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.2);
+    }
     #accountBar {
       position: absolute;
       top: 14px;
@@ -40,7 +78,7 @@
       font-size: 13px;
     }
     #accountName {
-      max-width: 160px;
+      max-width: 140px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -48,57 +86,69 @@
     #roomTitle { margin-top: 5px; font-size: 14px; opacity: 0.9; }
     .screen { padding: 35px 20px 16px; text-align: center; overflow: auto; }
     .screen h1, .screen h2 { margin-top: 0; }
-    .lede { color: #555; margin-top: 0; }
+    .lede { color: var(--muted); margin-top: 0; }
     input {
       width: 100%;
       max-width: 420px;
       padding: 14px;
       margin: 8px 0;
-      border: 1px solid #ccc;
+      border: 1px solid var(--input-border);
       border-radius: 9px;
       font-size: 16px;
       outline: none;
+      background: var(--input);
+      color: var(--text);
     }
-    input:focus { border-color: #5865f2; }
+    input:focus { border-color: var(--accent); }
     button {
       padding: 13px 20px;
       margin: 8px 4px;
       border: 0;
       border-radius: 9px;
-      background: #5865f2;
+      background: var(--accent);
       color: #fff;
       font-size: 16px;
       cursor: pointer;
     }
-    button:hover { background: #4752c4; }
+    button:hover { background: var(--accent-2); }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     .secondary { background: #777; }
+    .danger { background: #a33; }
     .hidden { display: none !important; }
-    .error { color: #d33; margin: 12px; min-height: 20px; }
+    .error { color: var(--danger); margin: 12px; min-height: 20px; }
     .tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 8px; }
-    .tabs button { background: #e8eaff; color: #5865f2; }
-    .tabs button.active { background: #5865f2; color: #fff; }
+    .tabs button { background: var(--mine); color: var(--accent); }
+    .tabs button.active { background: var(--accent); color: #fff; }
     #chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-    #messages { flex: 1; overflow-y: auto; padding: 20px; background: #f7f7f7; }
+    #messages { flex: 1; overflow-y: auto; padding: 20px; background: var(--messages); }
     .message {
-      background: #fff;
+      background: var(--bubble);
+      color: var(--text);
       padding: 10px 14px;
       margin-bottom: 10px;
       border-radius: 10px;
       max-width: 75%;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
       overflow-wrap: anywhere;
+      position: relative;
     }
-    .message.mine { margin-left: auto; background: #e8eaff; }
-    .name { font-size: 12px; font-weight: bold; color: #5865f2; margin-bottom: 4px; }
-    .time { color: #888; font-weight: normal; }
-    .system-message { text-align: center; color: #777; font-size: 13px; margin: 10px 0; }
+    .message.mine { margin-left: auto; background: var(--mine); }
+    .name { font-size: 12px; font-weight: bold; color: var(--accent); margin-bottom: 4px; }
+    .time { color: var(--muted); font-weight: normal; }
+    .delete-msg {
+      margin: 0 0 0 8px;
+      padding: 0 4px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .system-message { text-align: center; color: var(--muted); font-size: 13px; margin: 10px 0; }
     .chat-input {
       display: flex;
       padding: 12px;
-      border-top: 1px solid #ddd;
+      border-top: 1px solid var(--line);
       gap: 8px;
-      background: #fff;
+      background: var(--panel);
     }
     .chat-input input { flex: 1; max-width: none; margin: 0; }
     .chat-input button { margin: 0; }
@@ -107,55 +157,65 @@
       justify-content: space-between;
       align-items: center;
       padding: 6px 12px;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid var(--line);
       font-size: 13px;
-      color: #666;
+      color: var(--muted);
+      gap: 8px;
     }
     button.small { padding: 6px 12px; margin: 0; font-size: 13px; }
     header button.small { background: rgba(255, 255, 255, 0.2); }
     header button.small:hover { background: rgba(255, 255, 255, 0.32); }
     #roomDock {
       margin-top: auto;
-      border-top: 1px solid #ddd;
-      background: #f7f7fb;
+      border-top: 1px solid var(--line);
+      background: var(--dock);
       padding: 10px 14px 14px;
-      max-height: 220px;
+      max-height: 240px;
       overflow: auto;
     }
-    #roomDock h3 {
-      margin: 0 0 8px;
-      font-size: 13px;
-      text-align: left;
-      color: #555;
-    }
+    #roomDock h3 { margin: 0 0 8px; font-size: 13px; text-align: left; color: var(--muted); }
     .room-row {
       width: 100%;
       margin: 0 0 6px;
+      padding: 0;
+      display: flex;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .room-open {
+      flex: 1;
+      margin: 0;
       padding: 10px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #fff;
-      color: #222;
+      background: transparent;
+      color: var(--text);
       text-align: left;
-      border: 1px solid #e4e6ef;
+      border-radius: 0;
     }
-    .room-row:hover { background: #e8eaff; }
-    .room-code {
-      font-family: monospace;
-      letter-spacing: 1px;
-      color: #5865f2;
+    .room-open:hover { background: var(--mine); }
+    .room-delete {
+      margin: 0;
+      border-radius: 0;
+      background: #a33;
+      padding: 10px 12px;
     }
-    .empty-rooms { color: #888; font-size: 13px; text-align: left; margin: 0; }
+    .room-code { font-family: monospace; letter-spacing: 1px; color: var(--accent); }
+    .empty-rooms { color: var(--muted); font-size: 13px; text-align: left; margin: 0; }
     @media (max-width: 600px) {
       .message { max-width: 88%; }
-      #accountBar { position: static; justify-content: center; margin-top: 10px; }
+      #accountBar, #themeButton { position: static; }
+      header { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
     }
   </style>
 </head>
 <body>
 <div class="app">
   <header>
+    <button id="themeButton" class="small" type="button" onclick="toggleTheme()">Dark</button>
     <h2>Messenger</h2>
     <div id="accountBar" class="hidden">
       <span id="accountName"></span>
@@ -166,13 +226,13 @@
 
   <div id="auth" class="screen">
     <h1 id="authTitle">Log in</h1>
-    <p class="lede" id="authLede">Sign in to create or join a room.</p>
+    <p class="lede" id="authLede">The same account works on another phone or computer.</p>
     <div class="tabs">
       <button type="button" id="loginTab" class="active" onclick="showAuthMode('login')">Log in</button>
       <button type="button" id="signupTab" onclick="showAuthMode('signup')">Sign up</button>
     </div>
     <form id="authForm" onsubmit="submitAuth(event)">
-      <input id="displayName" class="hidden" maxlength="30" placeholder="Display name" autocomplete="nickname">
+      <input id="displayName" class="hidden" maxlength="20" placeholder="Display name" autocomplete="nickname">
       <br class="signup-only hidden">
       <input id="email" type="email" required placeholder="Email" autocomplete="email">
       <br>
@@ -187,12 +247,12 @@
 
   <div id="home" class="screen hidden">
     <h1>Welcome</h1>
-    <p class="lede">Create a room or join one with its code. Rooms you add stay at the bottom.</p>
-    <input id="displayNameEdit" maxlength="30" placeholder="Display name">
+    <p class="lede">Rooms stay on your account, so they show up on your other devices. Delete only removes a chat for you.</p>
+    <input id="displayNameEdit" maxlength="20" placeholder="Display name">
     <br>
     <button class="secondary" type="button" onclick="saveDisplayName()">Save name</button>
     <br>
-    <input id="roomName" maxlength="40" placeholder="New room name (optional)">
+    <input id="roomName" maxlength="24" placeholder="New room name (optional)">
     <br>
     <button type="button" onclick="createRoom()">Create Room</button>
     <button type="button" onclick="showJoin()">Join with Code</button>
@@ -216,11 +276,14 @@
   <div id="chat" class="hidden">
     <div class="chat-bar">
       <span id="connectionStatus">Connecting...</span>
-      <button class="secondary small" type="button" onclick="leaveRoom()">Leave Room</button>
+      <span>
+        <button class="danger small" type="button" onclick="deleteCurrentRoom()">Delete for me</button>
+        <button class="secondary small" type="button" onclick="leaveRoom()">Leave Room</button>
+      </span>
     </div>
     <div id="messages"></div>
     <div class="chat-input">
-      <input id="messageInput" maxlength="300" placeholder="Type a message..." autocomplete="off">
+      <input id="messageInput" maxlength="160" placeholder="Type a message..." autocomplete="off">
       <button id="sendButton" type="button" onclick="sendMessage()">Send</button>
     </div>
   </div>
@@ -230,16 +293,15 @@
   const API = "https://api.keyval.org";
   const KEY_PREFIX = "mshggp2026";
   const POLL_MS = 2000;
-  const DB_KEY = "messenger.db";
   const SESSION_KEY = "messenger.session";
-  const ROOMS_KEY = "messenger.myrooms";
+  const THEME_KEY = "messenger.theme";
   const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
   let currentUser = null;
   let currentRoom = null;
   let pollTimer = null;
   let seen = new Set();
-  let knownIndex = "";
+  let hidden = new Set();
 
   const auth = document.getElementById("auth");
   const home = document.getElementById("home");
@@ -251,77 +313,36 @@
   const accountBar = document.getElementById("accountBar");
   const accountName = document.getElementById("accountName");
 
-  function loadDb() {
-    try {
-      const data = JSON.parse(localStorage.getItem(DB_KEY) || "null");
-      if (data?.users) return data;
-    } catch {}
-    return { users: [] };
+  function applyTheme(theme) {
+    const next = theme === "dark" ? "dark" : "light";
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem(THEME_KEY, next);
+    document.getElementById("themeButton").textContent = next === "dark" ? "Light" : "Dark";
   }
 
-  function saveDb(db) {
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-  }
-
-  function myRooms() {
-    try {
-      const rooms = JSON.parse(localStorage.getItem(ROOMS_KEY) || "[]");
-      return Array.isArray(rooms) ? rooms : [];
-    } catch {
-      return [];
+  async function toggleTheme() {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    applyTheme(next);
+    if (currentUser) {
+      setValue(themeKey(currentUser.id), next).catch(() => {});
     }
-  }
-
-  function saveMyRooms(rooms) {
-    localStorage.setItem(ROOMS_KEY, JSON.stringify(rooms));
-    renderRoomDock();
-  }
-
-  function rememberRoom(room) {
-    const rooms = myRooms().filter((item) => item.code !== room.code);
-    rooms.push({ code: room.code, name: room.name });
-    saveMyRooms(rooms);
-  }
-
-  function renderRoomDock() {
-    const list = document.getElementById("roomList");
-    const rooms = myRooms();
-    list.innerHTML = "";
-    if (!rooms.length) {
-      const empty = document.createElement("p");
-      empty.className = "empty-rooms";
-      empty.textContent = "Rooms you create or join will stay here.";
-      list.appendChild(empty);
-      return;
-    }
-    for (const room of rooms) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "room-row";
-      const name = document.createElement("span");
-      name.textContent = room.name;
-      const code = document.createElement("span");
-      code.className = "room-code";
-      code.textContent = room.code;
-      button.appendChild(name);
-      button.appendChild(code);
-      button.onclick = () => openSavedRoom(room.code);
-      list.appendChild(button);
-    }
-    list.scrollTop = list.scrollHeight;
   }
 
   function bytesToHex(bytes) {
     return [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
-  async function hashPassword(password, salt) {
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(salt + ":" + password));
+  async function sha256(text) {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
     return bytesToHex(new Uint8Array(digest));
   }
 
+  async function userIdFromEmail(email) {
+    return (await sha256("user:" + email)).slice(0, 12);
+  }
+
   function randomSalt() {
-    const bytes = new Uint8Array(16);
+    const bytes = new Uint8Array(8);
     crypto.getRandomValues(bytes);
     return bytesToHex(bytes);
   }
@@ -332,50 +353,129 @@
     return [...bytes].map((b) => CODE_CHARS[b % CODE_CHARS.length]).join("");
   }
 
-  function label(user) {
-    return user?.name || user?.email?.split("@")[0] || "Account";
-  }
-
-  function setAccount(user) {
-    currentUser = user;
-    accountName.textContent = label(user);
-    accountBar.classList.remove("hidden");
-    document.getElementById("displayNameEdit").value = user?.name || "";
-  }
+  function userKey(id) { return KEY_PREFIX + "u" + id; }
+  function listKey(id) { return KEY_PREFIX + "l" + id; }
+  function themeKey(id) { return KEY_PREFIX + "t" + id; }
+  function hideKey(id, code) { return KEY_PREFIX + "h" + id + code; }
+  function roomKey(code) { return KEY_PREFIX + "r" + code; }
+  function indexKey(code) { return KEY_PREFIX + "i" + code; }
+  function messageKey(code, id) { return KEY_PREFIX + "m" + code + id; }
 
   async function getValue(key) {
     const res = await fetch(`${API}/get/${encodeURIComponent(key)}`);
-    if (!res.ok) throw new Error("Could not refresh.");
+    if (!res.ok) throw new Error("Could not reach the shared store.");
     const data = await res.json();
     if (!data || data.status === "-KEY-DOESNT-EXISTS-") return "";
     return data.val == null ? "" : String(data.val);
   }
 
   async function setValue(key, value) {
-    const safe = encodeURIComponent(String(value)).slice(0, 280);
+    const safe = encodeURIComponent(String(value)).slice(0, 260);
     const res = await fetch(`${API}/set/${encodeURIComponent(key)}/${safe}`);
     if (!res.ok) throw new Error("Could not save.");
     const data = await res.json().catch(() => ({}));
     if (data.status && data.status !== "SUCCESS") throw new Error("Could not save.");
   }
 
-  function roomKey(code) { return KEY_PREFIX + "r" + code; }
-  function indexKey(code) { return KEY_PREFIX + "i" + code; }
-  function messageKey(code, id) { return KEY_PREFIX + "m" + code + id; }
+  function parseUser(id, email, raw) {
+    const [salt, passwordHash, name] = String(raw).split("~");
+    if (!salt || !passwordHash) return null;
+    return { id, email, salt, passwordHash, name: name || email.split("@")[0] };
+  }
 
-  function localMessages(code) {
-    try {
-      const items = JSON.parse(localStorage.getItem("messenger.msgs." + code) || "[]");
-      return Array.isArray(items) ? items : [];
-    } catch {
-      return [];
+  function packUser(user) {
+    return [user.salt, user.passwordHash, user.name.replace(/~/g, "")].join("~");
+  }
+
+  function parseRooms(raw) {
+    if (!raw) return [];
+    return raw.split(",").filter(Boolean).map((part) => {
+      const [code, name] = part.split(":");
+      return { code, name: decodeURIComponent(name || code) };
+    }).filter((room) => room.code);
+  }
+
+  function packRooms(rooms) {
+    return rooms.map((room) => room.code + ":" + encodeURIComponent(room.name || room.code)).join(",");
+  }
+
+  async function loadRooms() {
+    return parseRooms(await getValue(listKey(currentUser.id)));
+  }
+
+  async function saveRooms(rooms) {
+    const packed = packRooms(rooms.slice(-8));
+    await setValue(listKey(currentUser.id), packed || "-");
+    renderRoomDock(rooms.slice(-8));
+  }
+
+  function renderRoomDock(rooms) {
+    const list = document.getElementById("roomList");
+    list.innerHTML = "";
+    if (!rooms.length) {
+      const empty = document.createElement("p");
+      empty.className = "empty-rooms";
+      empty.textContent = "Rooms you create or join will stay here, on every device.";
+      list.appendChild(empty);
+      return;
+    }
+    for (const room of rooms) {
+      const row = document.createElement("div");
+      row.className = "room-row";
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "room-open";
+      const name = document.createElement("span");
+      name.textContent = room.name;
+      const code = document.createElement("span");
+      code.className = "room-code";
+      code.textContent = room.code;
+      open.appendChild(name);
+      open.appendChild(code);
+      open.onclick = () => openSavedRoom(room.code);
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "room-delete";
+      remove.textContent = "Delete";
+      remove.onclick = () => deleteRoom(room.code);
+      row.appendChild(open);
+      row.appendChild(remove);
+      list.appendChild(row);
     }
   }
 
-  function rememberMessage(code, message) {
-    const items = localMessages(code).filter((item) => item.id !== message.id);
-    items.push(message);
-    localStorage.setItem("messenger.msgs." + code, JSON.stringify(items.slice(-40)));
+  async function rememberRoom(room) {
+    const rooms = (await loadRooms()).filter((item) => item.code !== room.code);
+    rooms.push({ code: room.code, name: room.name });
+    await saveRooms(rooms);
+  }
+
+  async function deleteRoom(code) {
+    if (!confirm("Delete this chat for you only? Other people keep it.")) return;
+    const rooms = (await loadRooms()).filter((item) => item.code !== code);
+    await saveRooms(rooms);
+    localStorage.removeItem("messenger.msgs." + currentUser.id + "." + code);
+    if (currentRoom === code) leaveRoom();
+  }
+
+  async function deleteCurrentRoom() {
+    if (currentRoom) await deleteRoom(currentRoom);
+  }
+
+  async function hideMessage(id) {
+    hidden.add(id);
+    const ids = [...hidden].slice(-18);
+    hidden = new Set(ids);
+    await setValue(hideKey(currentUser.id, currentRoom), ids.join(",") || "-");
+    redraw();
+  }
+
+  function setAccount(user) {
+    currentUser = user;
+    accountName.textContent = user.name;
+    accountBar.classList.remove("hidden");
+    document.getElementById("displayNameEdit").value = user.name || "";
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ id: user.id, email: user.email }));
   }
 
   function showAuthMode(mode) {
@@ -384,8 +484,8 @@
     document.getElementById("signupTab").classList.toggle("active", signup);
     document.getElementById("authTitle").textContent = signup ? "Sign up" : "Log in";
     document.getElementById("authLede").textContent = signup
-      ? "Create an account on this browser."
-      : "Sign in to create or join a room.";
+      ? "Create an account you can open on any device."
+      : "The same account works on another phone or computer.";
     document.getElementById("displayName").classList.toggle("hidden", !signup);
     document.querySelectorAll(".signup-only").forEach((el) => el.classList.toggle("hidden", !signup));
     document.getElementById("passwordConfirm").classList.toggle("hidden", !signup);
@@ -407,7 +507,7 @@
     auth.classList.remove("hidden");
   }
 
-  function showHome() {
+  async function showHome() {
     stopPolling();
     auth.classList.add("hidden");
     joinScreen.classList.add("hidden");
@@ -416,7 +516,11 @@
     home.classList.remove("hidden");
     roomDock.classList.remove("hidden");
     accountBar.classList.remove("hidden");
-    renderRoomDock();
+    try {
+      renderRoomDock(await loadRooms());
+    } catch (err) {
+      document.getElementById("homeError").textContent = err.message;
+    }
   }
 
   async function submitAuth(event) {
@@ -432,53 +536,49 @@
       errorEl.textContent = "Passwords do not match.";
       return;
     }
-    const db = loadDb();
-    const existing = db.users.find((user) => user.email === email);
-    if (mode === "signup") {
-      if (existing) {
-        errorEl.textContent = "An account with that email already exists.";
+    try {
+      const id = await userIdFromEmail(email);
+      const existing = parseUser(id, email, await getValue(userKey(id)));
+      if (mode === "signup") {
+        if (existing) {
+          errorEl.textContent = "An account with that email already exists.";
+          return;
+        }
+        const salt = randomSalt();
+        const user = {
+          id,
+          email,
+          salt,
+          passwordHash: await sha256(salt + ":" + password),
+          name: (name || email.split("@")[0]).slice(0, 20)
+        };
+        await setValue(userKey(id), packUser(user));
+        setAccount(user);
+        await showHome();
         return;
       }
-      const salt = randomSalt();
-      const user = {
-        id: crypto.randomUUID(),
-        email,
-        name: (name || email.split("@")[0]).slice(0, 30),
-        salt,
-        passwordHash: await hashPassword(password, salt)
-      };
-      db.users.push(user);
-      saveDb(db);
-      localStorage.setItem(SESSION_KEY, user.id);
-      setAccount(user);
-      showHome();
-      return;
+      if (!existing || await sha256(existing.salt + ":" + password) !== existing.passwordHash) {
+        errorEl.textContent = "Wrong email or password.";
+        return;
+      }
+      setAccount(existing);
+      const theme = await getValue(themeKey(id));
+      if (theme === "dark" || theme === "light") applyTheme(theme);
+      await showHome();
+    } catch (err) {
+      errorEl.textContent = err.message;
     }
-    if (!existing) {
-      errorEl.textContent = "No account with that email. Sign up first.";
-      return;
-    }
-    if (await hashPassword(password, existing.salt) !== existing.passwordHash) {
-      errorEl.textContent = "Wrong password.";
-      return;
-    }
-    localStorage.setItem(SESSION_KEY, existing.id);
-    setAccount(existing);
-    showHome();
   }
 
-  function saveDisplayName() {
-    const name = document.getElementById("displayNameEdit").value.trim();
+  async function saveDisplayName() {
+    const name = document.getElementById("displayNameEdit").value.trim().slice(0, 20);
     if (!name || !currentUser) {
       document.getElementById("homeError").textContent = "Enter a display name.";
       return;
     }
-    const db = loadDb();
-    const user = db.users.find((item) => item.id === currentUser.id);
-    if (!user) return;
-    user.name = name.slice(0, 30);
-    saveDb(db);
-    setAccount(user);
+    currentUser.name = name;
+    await setValue(userKey(currentUser.id), packUser(currentUser));
+    setAccount(currentUser);
     document.getElementById("homeError").textContent = "";
   }
 
@@ -492,16 +592,15 @@
 
   async function createRoom() {
     document.getElementById("homeError").textContent = "";
-    const name = document.getElementById("roomName").value.trim().slice(0, 40) || `${label(currentUser)}'s room`;
+    const name = document.getElementById("roomName").value.trim().slice(0, 24) || `${currentUser.name}'s room`;
     try {
       let code = "";
       for (let attempt = 0; attempt < 5; attempt++) {
         code = makeCode();
-        const existing = await getValue(roomKey(code));
-        if (!existing) break;
+        if (!(await getValue(roomKey(code)))) break;
       }
       await setValue(roomKey(code), name);
-      rememberRoom({ code, name });
+      await rememberRoom({ code, name });
       document.getElementById("roomName").value = "";
       await enterChat({ code, name });
       addSystemMessage(`Share this code: ${code}`);
@@ -526,11 +625,11 @@
     }
     try {
       const name = await getValue(roomKey(code));
-      if (!name) {
+      if (!name || name === "-") {
         document.getElementById("joinError").textContent = "Room not found. Check the code.";
         return;
       }
-      rememberRoom({ code, name });
+      await rememberRoom({ code, name });
       document.getElementById("joinCode").value = "";
       await enterChat({ code, name });
     } catch (err) {
@@ -541,11 +640,10 @@
   async function openSavedRoom(code) {
     try {
       const name = await getValue(roomKey(code));
-      if (!name) {
+      if (!name || name === "-") {
         document.getElementById("homeError").textContent = "That room is no longer available.";
         return;
       }
-      rememberRoom({ code, name });
       await enterChat({ code, name });
     } catch (err) {
       document.getElementById("homeError").textContent = err.message;
@@ -555,9 +653,9 @@
   async function enterChat(room) {
     currentRoom = room.code;
     seen = new Set();
-    knownIndex = "";
     messagesEl.innerHTML = "";
-    for (const message of localMessages(room.code)) renderMessage(message);
+    const hiddenRaw = await getValue(hideKey(currentUser.id, room.code));
+    hidden = new Set(hiddenRaw && hiddenRaw !== "-" ? hiddenRaw.split(",").filter(Boolean) : []);
     home.classList.add("hidden");
     joinScreen.classList.add("hidden");
     auth.classList.add("hidden");
@@ -586,64 +684,55 @@
     el.style.color = color;
   }
 
+  function decodeMessage(id, raw) {
+    const [name, createdAt, text] = String(raw).split("~");
+    return { id, name: name || "User", createdAt: createdAt || "", text: text || "" };
+  }
+
   async function poll() {
     if (!currentRoom) return;
     try {
       const index = await getValue(indexKey(currentRoom));
-      const keys = index ? index.split(",").filter(Boolean) : [];
-      for (const id of keys) {
-        if (seen.has(id)) continue;
+      const ids = index && index !== "-" ? index.split(",").filter(Boolean) : [];
+      const cached = ids.filter((id) => !hidden.has(id)).map((id) => {
+        const known = [...messagesEl.querySelectorAll(".message")].some((node) => node.dataset.id === id);
+        return known ? null : id;
+      }).filter(Boolean);
+      for (const id of cached) {
         const raw = await getValue(messageKey(currentRoom, id));
-        if (!raw) continue;
-        const message = decodeMessage(id, raw);
-        rememberMessage(currentRoom, message);
-        renderMessage(message);
+        if (raw) renderMessage(decodeMessage(id, raw));
       }
-      knownIndex = index;
-      setStatus(keys.length ? "Live" : "Live · no messages yet", "#1b7a3a");
+      setStatus(ids.length ? "Live" : "Live · no messages yet", "#3dcc7a");
     } catch (err) {
       setStatus(err.message || "Could not refresh", "#d33");
     }
   }
 
-  function decodeMessage(id, raw) {
-    const [name, createdAt, text] = String(raw).split("~");
-    return {
-      id,
-      name: name || "User",
-      createdAt: createdAt || "",
-      text: text || ""
-    };
-  }
-
   async function sendMessage() {
     const input = document.getElementById("messageInput");
-    const text = input.value.trim().slice(0, 180).replace(/~/g, "-");
+    const text = input.value.trim().slice(0, 140).replace(/~/g, "-");
     if (!text || !currentRoom) return;
     const id = Date.now().toString(36);
     const message = {
       id,
-      name: label(currentUser).replace(/~/g, ""),
+      name: currentUser.name.replace(/~/g, ""),
       createdAt: new Date().toISOString(),
       text
     };
     input.value = "";
-    rememberMessage(currentRoom, message);
     renderMessage(message);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
     try {
       await setValue(messageKey(currentRoom, id), `${message.name}~${message.createdAt}~${message.text}`);
       const index = await getValue(indexKey(currentRoom));
-      const ids = index ? index.split(",").filter(Boolean) : [];
+      const ids = index && index !== "-" ? index.split(",").filter(Boolean) : [];
       ids.push(id);
       let next = ids.join(",");
-      while (next.length > 250 && ids.length > 1) {
+      while (next.length > 240 && ids.length > 1) {
         ids.shift();
         next = ids.join(",");
       }
       await setValue(indexKey(currentRoom), next);
-      knownIndex = next;
-      setStatus("Live", "#1b7a3a");
+      setStatus("Live", "#3dcc7a");
     } catch (err) {
       setStatus(err.message, "#d33");
     }
@@ -658,12 +747,19 @@
     showHome();
   }
 
+  function redraw() {
+    const nodes = [...messagesEl.querySelectorAll(".message")];
+    for (const node of nodes) {
+      if (hidden.has(node.dataset.id)) node.remove();
+    }
+  }
+
   function renderMessage(message) {
-    if (seen.has(message.id)) return;
-    seen.add(message.id);
+    if (hidden.has(message.id) || messagesEl.querySelector(`[data-id="${message.id}"]`)) return;
     const div = document.createElement("div");
     div.className = "message";
-    if (message.name === label(currentUser)) div.classList.add("mine");
+    div.dataset.id = message.id;
+    if (message.name === currentUser.name) div.classList.add("mine");
     const name = document.createElement("div");
     name.className = "name";
     const time = document.createElement("span");
@@ -674,6 +770,12 @@
       : " · " + date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     name.textContent = message.name;
     name.appendChild(time);
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "delete-msg";
+    remove.textContent = "Delete";
+    remove.onclick = () => hideMessage(message.id);
+    name.appendChild(remove);
     const text = document.createElement("div");
     text.textContent = message.text;
     div.appendChild(name);
@@ -696,15 +798,27 @@
     document.getElementById("joinError").textContent = "";
   }
 
-  function boot() {
-    const db = loadDb();
-    const user = db.users.find((item) => item.id === localStorage.getItem(SESSION_KEY));
-    if (!user) {
+  async function boot() {
+    applyTheme(localStorage.getItem(THEME_KEY) || "light");
+    let session = null;
+    try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch {}
+    if (!session?.id || !session.email) {
       showAuthMode("login");
       return;
     }
-    setAccount(user);
-    showHome();
+    try {
+      const user = parseUser(session.id, session.email, await getValue(userKey(session.id)));
+      if (!user) {
+        showAuthMode("login");
+        return;
+      }
+      setAccount(user);
+      const theme = await getValue(themeKey(user.id));
+      if (theme === "dark" || theme === "light") applyTheme(theme);
+      await showHome();
+    } catch {
+      showAuthMode("login");
+    }
   }
 
   document.getElementById("messageInput").addEventListener("keydown", (event) => {
