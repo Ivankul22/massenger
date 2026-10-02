@@ -341,7 +341,6 @@
   function voiceKey(code) { return KEY_PREFIX + "v" + code; }
   function roomKey(code) { return KEY_PREFIX + "r" + code; }
   function usersKey() { return KEY_PREFIX + "users"; }
-  function directoryKey() { return KEY_PREFIX + "dir"; }
   function voteKey(id) { return KEY_PREFIX + "b" + id; }
   function isAdmin() { return !!(currentUser && currentUser.email === ADMIN_EMAIL); }
   let ghostMode = false;
@@ -534,7 +533,6 @@
         errorEl.textContent = "Verify your email before logging in. Use Resend code if you need a new one.";
         return;
       }
-      await rememberUser(existing);
       setAccount(existing);
       const theme = await getValue(themeKey(id));
       if (theme === "dark" || theme === "light") applyTheme(theme);
@@ -587,7 +585,6 @@
     await setValue(userKey(pendingUser.id), packUser(pendingUser));
     await setValue(profileKey(pendingUser.id), packProfile({ name: pendingUser.name, status: "online", color: "5865f2", custom: "", about: "" }));
     await setValue(KEY_PREFIX + "users", String(pendingUser.rank));
-    await rememberUser(pendingUser);
     setAccount(pendingUser);
     pendingUser = null;
     document.getElementById("verifyForm").classList.add("hidden");
@@ -610,82 +607,6 @@
     const item = code + ":" + encodeURIComponent(name.slice(0, 16));
     if (!rooms.some((entry) => entry.startsWith(code + ":"))) rooms.push(item);
     await setValue(allKey(), rooms.slice(-24).join(","));
-  }
-  async function rememberUser(user) {
-    const raw = await getValue(directoryKey());
-    const rows = raw && raw !== "-" ? raw.split("|").filter(Boolean) : [];
-    const item = [user.id, (user.name || "").replace(/[|~]/g, ""), user.email || "", user.rank || "", user.verified ? "1" : "0"].join("~");
-    const next = rows.filter((row) => !row.startsWith(user.id + "~"));
-    next.push(item);
-    await setValue(directoryKey(), next.slice(-40).join("|"));
-  }
-  async function openAdminMenu() {
-    if (!isAdmin()) { document.getElementById("homeError").textContent = "Only the admin email can open this."; return; }
-    home.classList.add("hidden");
-    document.getElementById("adminMenu").classList.remove("hidden");
-    const list = document.getElementById("adminUserList");
-    list.innerHTML = "";
-    await rememberUser(currentUser);
-    const raw = await getValue(directoryKey());
-    const banned = (await getValue(bansKey())).split(",");
-    const rows = raw && raw !== "-" ? raw.split("|").filter(Boolean) : [];
-    if (!rows.length) { list.textContent = "No users yet."; return; }
-    for (const row of rows) {
-      const [id, name, email, rank, verified] = row.split("~");
-      const card = document.createElement("div");
-      card.className = "room-row";
-      const info = document.createElement("button");
-      info.type = "button";
-      info.className = "room-open";
-      info.textContent = (name || "User") + " · " + (email || "no email") + " · " + (rank ? ordinal(rank) : "Member") + " · " + (verified === "1" ? "verified" : "not verified") + (banned.includes(id) ? " · banned" : "");
-      info.onclick = () => openProfile(id);
-      const ban = document.createElement("button");
-      ban.type = "button";
-      ban.className = "room-delete";
-      ban.textContent = banned.includes(id) ? "Unban" : "Ban";
-      ban.onclick = async () => { await setBan(id, !banned.includes(id)); openAdminMenu(); };
-      card.appendChild(info);
-      card.appendChild(ban);
-      list.appendChild(card);
-    }
-  }
-  async function toggleUsers() { openAdminMenu(); }
-    const list = document.getElementById("allUsers");
-    list.classList.toggle("hidden");
-    if (list.classList.contains("hidden")) return;
-    await rememberUser(currentUser);
-    const raw = await getValue(directoryKey());
-    const banned = (await getValue(bansKey())).split(",");
-    list.innerHTML = "";
-    const rows = raw && raw !== "-" ? raw.split("|").filter(Boolean) : [];
-    if (!rows.length) { list.textContent = "No users registered yet."; return; }
-    for (const row of rows) {
-      const [id, name, email] = row.split("~");
-      const wrap = document.createElement("div");
-      wrap.className = "room-row";
-      const open = document.createElement("button");
-      open.type = "button";
-      open.className = "room-open";
-      open.textContent = (name || "User") + (email ? " · " + email : "") + (banned.includes(id) ? " · banned" : "");
-      open.onclick = () => openProfile(id);
-      const ban = document.createElement("button");
-      ban.type = "button";
-      ban.className = "room-delete";
-      ban.textContent = banned.includes(id) ? "Unban" : "Ban";
-      ban.onclick = () => setBan(id, !banned.includes(id));
-      wrap.appendChild(open);
-      wrap.appendChild(ban);
-      list.appendChild(wrap);
-    }
-  }
-  async function setBan(id, banned) {
-    if (!isAdmin() || id === currentUser.id) return;
-    const raw = await getValue(bansKey());
-    let ids = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
-    ids = banned ? [...new Set([...ids, id])] : ids.filter((item) => item !== id);
-    await setValue(bansKey(), ids.join(",") || "-");
-    document.getElementById("allUsers").classList.add("hidden");
-    await toggleUsers();
   }
   async function renderAdmin() {
     const box = document.getElementById("adminBox");
