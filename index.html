@@ -6,19 +6,19 @@
   <title>Messenger</title>
   <style>
     :root {
-      --bg: #f2f4f7; --panel: #fff; --text: #222; --muted: #666; --line: #ddd;
-      --input: #fff; --input-border: #ccc; --bubble: #fff; --mine: #e8eaff;
-      --dock: #f7f7fb; --messages: #f7f7f7; --accent: #5865f2; --accent-2: #4752c4; --danger: #d33;
+      --bg: #eef1f8; --panel: #ffffff; --text: #1c2230; --muted: #667085; --line: #e4e7ef;
+      --input: #f8f9fc; --input-border: #d5dae6; --bubble: #ffffff; --mine: #e7e9ff;
+      --dock: #f4f6fb; --messages: #f6f7fb; --accent: #5b6cff; --accent-2: #4453e6; --danger: #d4536a;
     }
     html[data-theme="dark"] {
-      --bg: #11131a; --panel: #1b1e27; --text: #f2f3f5; --muted: #b5b8c5; --line: #2c3140;
-      --input: #12141b; --input-border: #3a4054; --bubble: #262a36; --mine: #343c6e;
-      --dock: #151821; --messages: #12141b; --accent: #7b86ff; --accent-2: #6670e6; --danger: #ff8b8b;
+      --bg: #0c0e14; --panel: #1a1d27; --text: #f4f6fb; --muted: #a7adbd; --line: #2a3040;
+      --input: #12151d; --input-border: #343b4e; --bubble: #222633; --mine: #3a4270;
+      --dock: #12151c; --messages: #10131a; --accent: #8b97ff; --accent-2: #6f7cf0; --danger: #ff8d9a;
     }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; font-family: Arial, sans-serif; background: var(--bg); color: var(--text); }
     .app { width: 100%; max-width: 900px; height: 100vh; margin: 0 auto; background: var(--panel); display: flex; flex-direction: column; }
-    header { position: relative; padding: 18px 20px; background: var(--accent); color: #fff; text-align: center; }
+    header { position: relative; padding: 18px 20px; background: linear-gradient(90deg, #4453e6, #7a6cff); color: #fff; text-align: center; }
     header h2 { margin: 0; }
     #themeButton { position: absolute; top: 14px; left: 14px; background: rgba(255,255,255,.2); }
     #accountBar { position: absolute; top: 14px; right: 14px; display: flex; align-items: center; gap: 8px; font-size: 13px; }
@@ -36,8 +36,8 @@
     button { padding: 13px 20px; margin: 8px 4px; border: 0; border-radius: 9px; background: var(--accent); color: #fff; font-size: 16px; cursor: pointer; }
     button:hover { background: var(--accent-2); }
     button:disabled { opacity: .5; cursor: not-allowed; }
-    .secondary { background: #777; }
-    .danger { background: #a33; }
+    .secondary { background: #5c6478; }
+    .danger { background: #c44b63; }
     .hidden { display: none !important; }
     .error { color: var(--danger); margin: 12px; min-height: 20px; }
     .tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 8px; }
@@ -61,10 +61,10 @@
     .vc-actions { display: flex; flex-direction: column; gap: 6px; }
     .vc-actions button { margin: 0; width: 100%; }
     #voiceBar { display: flex; flex-direction: column; gap: 8px; overflow: auto; }
-    .voice-tile { width: 100%; background: #1a1d27; color: #fff; border-radius: 10px; overflow: hidden; text-align: left; font-size: 12px; cursor: pointer; border: 1px solid #2c3140; }
-    .voice-tile video { width: 100%; height: 120px; object-fit: cover; background: #000; display: block; }
+    .voice-tile { width: 100%; background: var(--panel); color: var(--text); border-radius: 10px; overflow: hidden; text-align: left; font-size: 12px; cursor: pointer; border: 1px solid var(--line); }
+    .voice-tile video { width: 100%; height: 120px; object-fit: cover; background: #0c0e14; display: block; }
     .voice-tile .who { display: flex; align-items: center; gap: 8px; padding: 8px; }
-    .voice-tile .icon { width: 36px; height: 36px; border-radius: 50%; background: #5865f2; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; flex: none; }
+    .voice-tile .icon { width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; overflow: hidden; flex: none; }
     .voice-tile .icon img { width: 100%; height: 100%; object-fit: cover; }
     #vcMembers { font-size: 12px; color: var(--muted); }
     .mention { color: var(--accent); font-weight: bold; background: var(--mine); border-radius: 4px; padding: 0 3px; }
