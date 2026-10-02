@@ -56,7 +56,10 @@
     .chat-input { display: flex; padding: 12px; border-top: 1px solid var(--line); gap: 8px; background: var(--panel); }
     .chat-input input { flex: 1; max-width: none; margin: 0; }
     .chat-input button { margin: 0; }
-    .chat-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); gap: 8px; }
+    .voice-bar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--dock); overflow-x: auto; }
+    .voice-tile { width: 120px; min-width: 120px; background: #111; color: #fff; border-radius: 8px; overflow: hidden; text-align: center; font-size: 12px; }
+    .voice-tile video { width: 100%; height: 80px; object-fit: cover; background: #000; display: block; }
+    .voice-tile .label { padding: 4px; }
     button.small { padding: 6px 12px; margin: 0; font-size: 13px; }
     header button.small, #accountName { background: rgba(255,255,255,.2); }
     header button.small:hover, #accountName:hover { background: rgba(255,255,255,.32); }
@@ -150,10 +153,14 @@
     <div class="chat-bar">
       <span id="connectionStatus">Connecting...</span>
       <span>
-        <button class="danger small" type="button" onclick="deleteCurrentRoom()">Delete for me</button>
+        <button class="secondary small" type="button" onclick="joinVoice(false)">Join voice</button>
+        <button class="secondary small" type="button" onclick="joinVoice(true)">Video call</button>
+        <button class="secondary small" type="button" onclick="toggleMute()">Mute</button>
+        <button class="danger small" type="button" onclick="leaveVoice()">Leave voice</button>
         <button class="secondary small" type="button" onclick="leaveRoom()">Leave Room</button>
       </span>
     </div>
+    <div id="voiceBar" class="voice-bar hidden"></div>
     <div id="messages"></div>
     <div id="gifPanel" class="hidden">
       <div class="gif-tags" id="gifTags"></div>
@@ -199,6 +206,7 @@
   </div>
 </div>
 
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
   const API = "https://api.keyval.org";
   const GIF_API = "https://api.otakugifs.xyz/gif?reaction=";
@@ -251,7 +259,7 @@
   function themeKey(id) { return KEY_PREFIX + "t" + id; }
   function hideKey(id, code) { return KEY_PREFIX + "h" + id + code; }
   function profileKey(id) { return KEY_PREFIX + "p" + id; }
-  function roomKey(code) { return KEY_PREFIX + "r" + code; }
+  function voiceKey(code) { return KEY_PREFIX + "v" + code; }
   function indexKey(code) { return KEY_PREFIX + "i" + code; }
   function messageKey(code, id) { return KEY_PREFIX + "m" + code + id; }
 
@@ -482,6 +490,7 @@
         if (raw) renderMessage(decodeMessage(id, raw));
       }
       setStatus(ids.length ? "Live" : "Live · no messages yet", "#3dcc7a");
+      refreshVoice();
     } catch (err) { setStatus(err.message || "Could not refresh", "#d33"); }
   }
   function normalize(text) { return text.toLowerCase().replace(/[^a-z]/g, ""); }
@@ -528,7 +537,124 @@
     document.getElementById("gifPanel").classList.add("hidden");
     try { await publish(message); setStatus("Live", "#3dcc7a"); } catch (err) { setStatus(err.message, "#d33"); }
   }
+  let voicePeer = null;
+  let localStream = null;
+  let voiceCalls = new Map();
+  let muted = false;
+
+  function peerIdFor(userId) {
+    return "m" + currentRoom.toLowerCase() + userId;
+  }
+
+  function addTile(id, stream, label, isLocal) {
+    const bar = document.getElementById("voiceBar");
+    let tile = document.getElementById("tile-" + id);
+    if (!tile) {
+      tile = document.createElement("div");
+      tile.id = "tile-" + id;
+      tile.className = "voice-tile";
+      const video = document.createElement("video");
+      video.autoplay = true;
+      video.playsInline = true;
+      if (isLocal) video.muted = true;
+      const name = document.createElement("div");
+      name.className = "label";
+      name.textContent = label;
+      tile.appendChild(video);
+      tile.appendChild(name);
+      bar.appendChild(tile);
+    }
+    const video = tile.querySelector("video");
+    if (video.srcObject !== stream) video.srcObject = stream;
+    video.style.display = stream.getVideoTracks().length ? "block" : "none";
+    bar.classList.remove("hidden");
+  }
+
+  async function joinVoice(withVideo) {
+    if (!currentRoom) return;
+    if (voicePeer) await leaveVoice();
+    try {
+      localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: withVideo });
+    } catch {
+      setStatus("Allow the microphone" + (withVideo ? " and camera" : "") + " to join.", "#d33");
+      return;
+    }
+    muted = false;
+    const id = peerIdFor(currentUser.id);
+    voicePeer = new Peer(id);
+    voicePeer.on("open", async () => {
+      addTile("me", localStream, currentUser.name + " (you)", true);
+      const raw = await getValue(voiceKey(currentRoom));
+      const ids = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
+      if (!ids.includes(id)) ids.push(id);
+      await setValue(voiceKey(currentRoom), ids.slice(-8).join(","));
+      connectVoicePeers(ids);
+      setStatus(withVideo ? "In video call" : "In voice", "#3dcc7a");
+    });
+    voicePeer.on("call", (call) => answerCall(call));
+    voicePeer.on("error", () => setStatus("Voice could not connect. Try again.", "#d33"));
+  }
+
+  function answerCall(call) {
+    if (!localStream) return;
+    call.answer(localStream);
+    watchCall(call);
+  }
+
+  function watchCall(call) {
+    voiceCalls.set(call.peer, call);
+    call.on("stream", (stream) => addTile(call.peer, stream, "In call", false));
+    call.on("close", () => {
+      voiceCalls.delete(call.peer);
+      document.getElementById("tile-" + call.peer)?.remove();
+    });
+  }
+
+  function connectVoicePeers(ids) {
+    const mine = peerIdFor(currentUser.id);
+    for (const id of ids) {
+      if (id === mine || id >= mine || voiceCalls.has(id)) continue;
+      const call = voicePeer.call(id, localStream);
+      if (call) watchCall(call);
+    }
+  }
+
+  async function refreshVoice() {
+    if (!voicePeer || !currentRoom) return;
+    try {
+      const raw = await getValue(voiceKey(currentRoom));
+      const ids = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
+      connectVoicePeers(ids);
+    } catch {}
+  }
+
+  function toggleMute() {
+    if (!localStream) return;
+    muted = !muted;
+    localStream.getAudioTracks().forEach((track) => { track.enabled = !muted; });
+    setStatus(muted ? "Muted" : "In voice", muted ? "#faa81a" : "#3dcc7a");
+  }
+
+  async function leaveVoice() {
+    if (voicePeer && currentRoom) {
+      const mine = peerIdFor(currentUser.id);
+      const raw = await getValue(voiceKey(currentRoom)).catch(() => "");
+      const ids = raw && raw !== "-" ? raw.split(",").filter((id) => id && id !== mine) : [];
+      await setValue(voiceKey(currentRoom), ids.join(",") || "-").catch(() => {});
+    }
+    voiceCalls.forEach((call) => call.close());
+    voiceCalls.clear();
+    if (localStream) localStream.getTracks().forEach((track) => track.stop());
+    localStream = null;
+    if (voicePeer) voicePeer.destroy();
+    voicePeer = null;
+    const bar = document.getElementById("voiceBar");
+    bar.innerHTML = "";
+    bar.classList.add("hidden");
+  }
+
   function leaveRoom() {
+    leaveVoice();
     stopPolling(); currentRoom = null;
     chat.classList.add("hidden"); roomTitle.classList.add("hidden");
     document.getElementById("gifPanel").classList.add("hidden");
@@ -555,7 +681,8 @@
     remove.className = "delete-msg";
     remove.textContent = "Delete";
     remove.onclick = () => hideMessage(message.id);
-    name.appendChild(who); name.appendChild(time); name.appendChild(remove);
+    name.appendChild(who); name.appendChild(time);
+    if (message.uid === currentUser.id) name.appendChild(remove);
     div.appendChild(name);
     if (message.kind === "gif" && /^https:\/\//.test(message.text)) {
       const img = document.createElement("img");
