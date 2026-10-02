@@ -44,6 +44,31 @@
     .tabs button { background: var(--mine); color: var(--accent); }
     .tabs button.active { background: var(--accent); color: #fff; }
     #chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    #chatBody { flex: 1; min-height: 0; display: flex; }
+    #vcMenu {
+      width: 230px;
+      min-width: 230px;
+      border-right: 1px solid var(--line);
+      background: var(--dock);
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      gap: 8px;
+    }
+    #vcMenu h3 { margin: 0; font-size: 13px; color: var(--muted); }
+    .vc-actions { display: flex; flex-direction: column; gap: 6px; }
+    .vc-actions button { margin: 0; width: 100%; }
+    #voiceBar { display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+    .voice-tile { background: #111; color: #fff; border-radius: 8px; overflow: hidden; text-align: center; font-size: 12px; }
+    .voice-tile video { width: 100%; height: 110px; object-fit: cover; background: #000; display: block; }
+    .voice-tile .label { padding: 4px; }
+    #vcMembers { font-size: 12px; color: var(--muted); }
+    .mention { color: var(--accent); font-weight: bold; background: var(--mine); border-radius: 4px; padding: 0 3px; }
+    .message.tagged { outline: 2px solid var(--accent); }
+    #mentionMenu { position: absolute; left: 12px; bottom: 62px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; min-width: 180px; z-index: 3; }
+    #mentionMenu button { display: block; width: 100%; margin: 0; text-align: left; background: transparent; color: var(--text); border-radius: 0; }
+    #mentionMenu button:hover { background: var(--mine); }
+    #chatMain { position: relative; }
     #messages { flex: 1; overflow-y: auto; padding: 20px; background: var(--messages); }
     .message { background: var(--bubble); color: var(--text); padding: 10px 14px; margin-bottom: 10px; border-radius: 10px; max-width: 75%; box-shadow: 0 1px 3px rgba(0,0,0,.08); overflow-wrap: anywhere; }
     .message.mine { margin-left: auto; background: var(--mine); }
@@ -56,7 +81,7 @@
     .chat-input { display: flex; padding: 12px; border-top: 1px solid var(--line); gap: 8px; background: var(--panel); }
     .chat-input input { flex: 1; max-width: none; margin: 0; }
     .chat-input button { margin: 0; }
-    .voice-bar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--line); background: var(--dock); overflow-x: auto; }
+    .voice-bar { display: none; }
     .voice-tile { width: 120px; min-width: 120px; background: #111; color: #fff; border-radius: 8px; overflow: hidden; text-align: center; font-size: 12px; }
     .voice-tile video { width: 100%; height: 80px; object-fit: cover; background: #000; display: block; }
     .voice-tile .label { padding: 4px; }
@@ -89,6 +114,8 @@
       .message { max-width: 88%; }
       #accountBar, #themeButton { position: static; }
       header { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+      #chatBody { flex-direction: column; }
+      #vcMenu { width: 100%; min-width: 0; max-height: 240px; border-right: 0; border-bottom: 1px solid var(--line); }
     }
   </style>
 </head>
@@ -152,24 +179,34 @@
   <div id="chat" class="hidden">
     <div class="chat-bar">
       <span id="connectionStatus">Connecting...</span>
-      <span>
-        <button class="secondary small" type="button" onclick="joinVoice(false)">Join voice</button>
-        <button class="secondary small" type="button" onclick="joinVoice(true)">Video call</button>
-        <button class="secondary small" type="button" onclick="toggleMute()">Mute</button>
-        <button class="danger small" type="button" onclick="leaveVoice()">Leave voice</button>
-        <button class="secondary small" type="button" onclick="leaveRoom()">Leave Room</button>
-      </span>
+      <button class="secondary small" type="button" onclick="leaveRoom()">Leave Room</button>
     </div>
-    <div id="voiceBar" class="voice-bar hidden"></div>
-    <div id="messages"></div>
-    <div id="gifPanel" class="hidden">
-      <div class="gif-tags" id="gifTags"></div>
-      <div class="gif-grid" id="gifGrid"></div>
-    </div>
-    <div class="chat-input">
-      <input id="messageInput" maxlength="160" placeholder="Type a message..." autocomplete="off">
-      <button class="secondary" type="button" onclick="toggleGifs()">GIF</button>
-      <button id="sendButton" type="button" onclick="sendMessage()">Send</button>
+    <div id="chatBody">
+      <aside id="vcMenu">
+        <h3>Voice channel</h3>
+        <div class="vc-actions">
+          <button type="button" onclick="joinVoice(false)">Join voice</button>
+          <button type="button" onclick="joinVoice(true)">Video call</button>
+          <button class="secondary" type="button" onclick="toggleMute()">Mute</button>
+          <button class="secondary" type="button" onclick="toggleDeafen()">Deafen</button>
+          <button class="danger" type="button" onclick="leaveVoice()">Leave voice</button>
+        </div>
+        <div id="vcMembers">No one in voice yet.</div>
+        <div id="voiceBar"></div>
+      </aside>
+      <div id="chatMain">
+        <div id="mentionMenu" class="hidden"></div>
+        <div id="messages"></div>
+        <div id="gifPanel" class="hidden">
+          <div class="gif-tags" id="gifTags"></div>
+          <div class="gif-grid" id="gifGrid"></div>
+        </div>
+        <div class="chat-input">
+          <input id="messageInput" maxlength="160" placeholder="Type a message..." autocomplete="off">
+          <button class="secondary" type="button" onclick="toggleGifs()">GIF</button>
+          <button id="sendButton" type="button" onclick="sendMessage()">Send</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -260,7 +297,7 @@
   function hideKey(id, code) { return KEY_PREFIX + "h" + id + code; }
   function profileKey(id) { return KEY_PREFIX + "p" + id; }
   function voiceKey(code) { return KEY_PREFIX + "v" + code; }
-  function roomKey(code) { return KEY_PREFIX + "r" + code; }
+  function membersKey(code) { return KEY_PREFIX + "e" + code; }
   function indexKey(code) { return KEY_PREFIX + "i" + code; }
   function messageKey(code, id) { return KEY_PREFIX + "m" + code + id; }
 
@@ -469,6 +506,7 @@
     roomTitle.textContent = `${room.name} · Code: ${room.code}`;
     roomTitle.classList.remove("hidden");
     document.getElementById("messageInput").focus();
+    await rememberMember(currentUser.name);
     await poll();
     startPolling();
   }
@@ -518,6 +556,67 @@
     while (next.length > 240 && ids.length > 1) { ids.shift(); next = ids.join(","); }
     await setValue(indexKey(currentRoom), next);
   }
+  async function rememberMember(name) {
+    const clean = String(name || "").replace(/[,@]/g, "").trim();
+    if (!clean || !currentRoom) return;
+    const raw = await getValue(membersKey(currentRoom));
+    const names = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
+    if (!names.includes(clean)) names.push(clean);
+    await setValue(membersKey(currentRoom), names.slice(-10).join(","));
+  }
+
+  async function roomMembers() {
+    const raw = await getValue(membersKey(currentRoom));
+    return raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
+  }
+
+  function hideMentions() {
+    document.getElementById("mentionMenu").classList.add("hidden");
+  }
+
+  async function showMentions() {
+    const input = document.getElementById("messageInput");
+    const match = input.value.slice(0, input.selectionStart).match(/@([^\s@]*)$/);
+    const menu = document.getElementById("mentionMenu");
+    if (!match) { menu.classList.add("hidden"); return; }
+    const query = match[1].toLowerCase();
+    const names = (await roomMembers()).filter((name) => name.toLowerCase().includes(query) && name !== currentUser.name);
+    menu.innerHTML = "";
+    if (!names.length) { menu.classList.add("hidden"); return; }
+    for (const name of names) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = "@" + name;
+      button.onclick = () => insertMention(name);
+      menu.appendChild(button);
+    }
+    menu.classList.remove("hidden");
+  }
+
+  function insertMention(name) {
+    const input = document.getElementById("messageInput");
+    const before = input.value.slice(0, input.selectionStart).replace(/@([^\s@]*)$/, "@" + name + " ");
+    const after = input.value.slice(input.selectionStart);
+    input.value = before + after;
+    hideMentions();
+    input.focus();
+  }
+
+  function messageTextNode(text) {
+    const wrap = document.createElement("div");
+    const parts = String(text).split(/(@[^\s@]+)/g);
+    for (const part of parts) {
+      if (part.startsWith("@")) {
+        const mark = document.createElement("span");
+        mark.className = "mention";
+        mark.textContent = part;
+        wrap.appendChild(mark);
+      } else {
+        wrap.appendChild(document.createTextNode(part));
+      }
+    }
+    return wrap;
+  }
   async function sendMessage() {
     const input = document.getElementById("messageInput");
     const text = input.value.trim().slice(0, 140).replace(/~/g, "-");
@@ -542,6 +641,30 @@
   let localStream = null;
   let voiceCalls = new Map();
   let muted = false;
+  let deafened = false;
+
+  function playJoinSound() {
+    const ctx = new AudioContext();
+    const now = ctx.currentTime;
+    [523, 659, 784].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.08, now + 0.02 + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28 + i * 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + 0.32 + i * 0.08);
+    });
+    setTimeout(() => ctx.close(), 800);
+  }
+
+  function setMembers(text) {
+    document.getElementById("vcMembers").textContent = text;
+  }
 
   function peerIdFor(userId) {
     return "m" + currentRoom.toLowerCase() + userId;
@@ -568,7 +691,7 @@
     const video = tile.querySelector("video");
     if (video.srcObject !== stream) video.srcObject = stream;
     video.style.display = stream.getVideoTracks().length ? "block" : "none";
-    bar.classList.remove("hidden");
+    if (!isLocal) playJoinSound();
   }
 
   async function joinVoice(withVideo) {
@@ -585,10 +708,12 @@
     voicePeer = new Peer(id);
     voicePeer.on("open", async () => {
       addTile("me", localStream, currentUser.name + " (you)", true);
+      playJoinSound();
       const raw = await getValue(voiceKey(currentRoom));
       const ids = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
       if (!ids.includes(id)) ids.push(id);
       await setValue(voiceKey(currentRoom), ids.slice(-8).join(","));
+      setMembers(ids.length + " in voice");
       connectVoicePeers(ids);
       setStatus(withVideo ? "In video call" : "In voice", "#3dcc7a");
     });
@@ -626,6 +751,7 @@
       const raw = await getValue(voiceKey(currentRoom));
       const ids = raw && raw !== "-" ? raw.split(",").filter(Boolean) : [];
       connectVoicePeers(ids);
+      setMembers(ids.length ? ids.length + " in voice" : "No one in voice yet.");
     } catch {}
   }
 
@@ -634,6 +760,14 @@
     muted = !muted;
     localStream.getAudioTracks().forEach((track) => { track.enabled = !muted; });
     setStatus(muted ? "Muted" : "In voice", muted ? "#faa81a" : "#3dcc7a");
+  }
+
+  function toggleDeafen() {
+    deafened = !deafened;
+    document.querySelectorAll("#voiceBar video").forEach((video) => {
+      if (video.id !== "local-video") video.muted = deafened;
+    });
+    setStatus(deafened ? "Deafened" : "In voice", deafened ? "#faa81a" : "#3dcc7a");
   }
 
   async function leaveVoice() {
@@ -651,7 +785,7 @@
     voicePeer = null;
     const bar = document.getElementById("voiceBar");
     bar.innerHTML = "";
-    bar.classList.add("hidden");
+    setMembers("No one in voice yet.");
   }
 
   function leaveRoom() {
@@ -692,9 +826,8 @@
       img.alt = "GIF";
       div.appendChild(img);
     } else {
-      const text = document.createElement("div");
-      text.textContent = message.text;
-      div.appendChild(text);
+      div.appendChild(messageTextNode(message.text));
+      if (message.text.toLowerCase().includes("@" + currentUser.name.toLowerCase())) div.classList.add("tagged");
     }
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
@@ -821,7 +954,11 @@
       await showHome();
     } catch { showAuthMode("login"); }
   }
-  document.getElementById("messageInput").addEventListener("keydown", (event) => { if (event.key === "Enter") sendMessage(); });
+  document.getElementById("messageInput").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { hideMentions(); sendMessage(); }
+    if (event.key === "Escape") hideMentions();
+  });
+  document.getElementById("messageInput").addEventListener("input", () => showMentions());
   document.getElementById("joinCode").addEventListener("keydown", (event) => { if (event.key === "Enter") joinRoom(); });
   showAuthMode("login");
   boot();
